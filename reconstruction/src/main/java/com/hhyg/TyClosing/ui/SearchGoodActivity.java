@@ -539,11 +539,18 @@ public class SearchGoodActivity extends AppCompatActivity {
                 if(verticalItem.isAllchoseFlag()){
                     clearFilterStatus(verticalBean,otherBean);
                 }else if(verticalItem.isSelected()){
-                    Observable<FilterItem> A = Observable.just(verticalBean)
+                    Observable<FilterItem> A = Observable.just(verticalBean)   //单选
                             .filter(new Predicate<FilterBean>() {
                                 @Override
                                 public boolean test(@NonNull FilterBean filterBean) throws Exception {
                                     return filterBean.getType() == FilterType.CATEGORY && filterBean.getType() ==FilterType.PRICE;
+                                }
+                            })
+                            .doOnNext(new Consumer<FilterBean>() {
+                                @Override
+                                public void accept(@NonNull FilterBean filterBean) throws Exception {
+                                    filterBean.setSelected(true);
+                                    filterBean.setSelectedName(verticalItem.getName());
                                 }
                             })
                             .flatMap(new Function<FilterBean, ObservableSource<FilterItem>>() {
@@ -557,9 +564,20 @@ public class SearchGoodActivity extends AppCompatActivity {
                                 public boolean test(@NonNull FilterItem filterItem) throws Exception {
                                     return !filterItem.isAllchoseFlag();
                                 }
+                            })
+                            .doOnNext(new Consumer<FilterItem>() {
+                                @Override
+                                public void accept(@NonNull FilterItem filterItem) throws Exception {
+                                    filterItem.setSelected(false);
+                                }
+                            })
+                            .doFinally(new Action() {
+                                @Override
+                                public void run() throws Exception {
+                                    verticalItem.setSelected(true);
+                                }
                             });
 
-                    Observable<FilterItem> B = Observable.fromIterable(otherBean.getDataSet());
 
                 }else if(!verticalItem.isSelected()){
 
