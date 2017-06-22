@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name = "title">21sp</dimen>
+    <dimen name="smallTitle">18sp</dimen>
+    <dimen name = "normalword">15sp</dimen>
+    <dimen name = "topbarheight">50dip</dimen>
+    <dimen name="rippleStrokeWidth">2dp</dimen>
+    <dimen name="rippleRadius">64dp</dimen>
+    <dimen name="drawerWidth">600dp</dimen>
+    <dimen name="searchboxWidth">420dp</dimen>
+</resources>
