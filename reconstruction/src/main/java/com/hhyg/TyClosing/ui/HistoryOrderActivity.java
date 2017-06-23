@@ -75,7 +75,7 @@ public class HistoryOrderActivity extends Activity {
         mListView.setAdapter(mAdapter);
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-        mDrawerLayout.setDrawerListener(myDrawerListener);
+        mDrawerLayout.addDrawerListener(myDrawerListener);
         mCancelBtn = (Button) findViewById(R.id.cancel_btn);
         mNullView = (ImageView) findViewById(R.id.nullorder);
         findSlidingView();

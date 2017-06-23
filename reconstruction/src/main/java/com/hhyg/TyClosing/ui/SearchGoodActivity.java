@@ -9,7 +9,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
 import android.text.Html;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -18,8 +20,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
@@ -79,6 +81,7 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
 import io.reactivex.Observer;
+import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.CompositeDisposable;
@@ -94,7 +97,7 @@ import io.reactivex.schedulers.Schedulers;
  * Created by user on 2017/6/7.
  */
 
-public class SearchGoodActivity extends AppCompatActivity {
+public class SearchGoodActivity extends AppCompatActivity{
     private static final String TAG = "SearchGoodActivity";
     @BindView(R.id.backbtn)
     ImageButton backbtn;
@@ -134,6 +137,8 @@ public class SearchGoodActivity extends AppCompatActivity {
     VerticalFilterItemAdapter verticalFilterItemAdapter;
     @Inject
     ShopcartListParam shopcartListParam;
+    @Inject
+    FilterHelper filterHelper;
     @BindView(R.id.chosehotsale)
     ImageButton chosehotsale;
     @BindView(R.id.chosenew)
@@ -165,10 +170,6 @@ public class SearchGoodActivity extends AppCompatActivity {
     int totalPage;
     @BindView(R.id.has_stock_cb)
     CheckBox hasStockCb;
-    @BindView(R.id.selected_icon)
-    ImageView selectedIcon;
-    @BindView(R.id.contenttop)
-    RelativeLayout contenttop;
     @BindView(R.id.cast)
     TextView cast;
     @BindView(R.id.cut)
@@ -187,6 +188,9 @@ public class SearchGoodActivity extends AppCompatActivity {
     RelativeLayout activelayout;
     private SearchFilterRes rawFilterRes;
     private PeopertyPopwindow popWindow;
+    private View priceDef;
+    private EditText priceDef_min;
+    private EditText priceDef_max;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -262,6 +266,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                     public void accept(@NonNull ArrayList<FilterBean> filterBeen) throws Exception {
                         verticalFilterAdapter.setNewData(filterBeen);
                         if(filterBeen.size() != 0){
+                            Log.d(TAG, "show");
                             verticalFilterAdapter.getOnItemClickListener().onItemClick(verticalFilterAdapter, null, 0);
                         }
                     }
@@ -292,13 +297,15 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .flatMap(new Function<FilterBean, ObservableSource<SearchGoodsParam.DataBean>>() {
                     @Override
                     public ObservableSource<SearchGoodsParam.DataBean> apply(@NonNull FilterBean filterBean) throws Exception {
-                        int size = filterBean.getDataSet().size();
+                        int size = filterBean.getDataSet().size() -1 ;
+                        Log.d(TAG, "ss" + size);
                         SearchGoodsParam.DataBean params[] = new SearchGoodsParam.DataBean[size];
-                        for (int idx = 0; idx < size; idx++) {
+                        for (int idx = 1; idx < size + 1; idx++) {
                             FilterItem item = filterBean.getDataSet().get(idx);
                             SearchGoodsParam.DataBean TmpParam = (SearchGoodsParam.DataBean) param.getData().clone();
                             TmpParam.setClass3Id(item.getId());
-                            params[idx] = TmpParam;
+                            Log.d(TAG, item.getId());
+                            params[idx - 1] = TmpParam;
                         }
                         return Observable.fromArray(params);
                     }
@@ -385,6 +392,7 @@ public class SearchGoodActivity extends AppCompatActivity {
 
     private void initView() {
         initSearchType();
+        chosengerenal.setClickable(false);
         searchtitle.setText(getIntent().getStringExtra(getString(R.string.search_content)));
         goodsWrap.setLayoutManager(new GridLayoutManager(this, 3, GridLayoutManager.VERTICAL, false));
         goodsWrap.setHasFixedSize(true);
@@ -448,10 +456,10 @@ public class SearchGoodActivity extends AppCompatActivity {
                 verticalFilterItemAdapter.setFilterBean(bean);
                 adapter.notifyDataSetChanged();
                 verticalFilterItemAdapter.setNewData(bean.getDataSet());
-                if (bean.isSelected()) {
-                    selectedIcon.setVisibility(View.GONE);
-                } else {
-                    selectedIcon.setVisibility(View.VISIBLE);
+                if(bean.getType() == FilterType.PRICE){
+                    priceDef.setVisibility(View.VISIBLE);
+                }else{
+                    priceDef.setVisibility(View.GONE);
                 }
             }
         });
@@ -516,41 +524,203 @@ public class SearchGoodActivity extends AppCompatActivity {
             public void onDismiss() {
                 popAdapter.getFilterData().setShowNow(false);
                 horizontalFilterAdapter.notifyDataSetChanged();
+                checkFilterStatus4View();
+                changeSearchGoods();
             }
         });
         verticalFilterItemAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
-                FilterBean verticalBean = verticalFilterItemAdapter.getFilterBean();
-                final FilterItem verticalItem = (FilterItem) adapter.getItem(position);
-                if(verticalItem.isAllchoseFlag() && verticalItem.isSelected()){
+                if(position == 0){
+                    Log.d(TAG, "asd");
+                }
+                final FilterBean beanArg1 = verticalFilterItemAdapter.getFilterBean();
+                final FilterItem itemArg1 = (FilterItem) adapter.getItem(position);
+                if(itemArg1.isAllchoseFlag() && itemArg1.isSelected()){
                     return;
                 }
-                if(verticalBean.getType() == FilterType.CATEGORY){
-                    categoryChange();
-                }
-                FilterBean otherBean = new FilterBean();
-                ArrayList<FilterBean> beans = (ArrayList<FilterBean>) verticalFilterAdapter.getData();
+                FilterBean beanArg2 = new FilterBean();
+                ArrayList<FilterBean> beans = (ArrayList<FilterBean>) horizontalFilterAdapter.getData();
                 for (FilterBean tmpBean : beans){
-                    if(tmpBean.getName().equals(verticalBean.getName())){
-                        otherBean = tmpBean;
+                    if(tmpBean.getName().equals(beanArg1.getName())){
+                        beanArg2 = tmpBean;
+                        break;
                     }
                 }
-                if(verticalItem.isAllchoseFlag()){
-                    clearFilterStatus(verticalBean,otherBean);
-                }else if(verticalItem.isSelected()){
-                    Observable<FilterItem> A = Observable.just(verticalBean)   //单选
-                            .filter(new Predicate<FilterBean>() {
-                                @Override
-                                public boolean test(@NonNull FilterBean filterBean) throws Exception {
-                                    return filterBean.getType() == FilterType.CATEGORY && filterBean.getType() ==FilterType.PRICE;
-                                }
-                            })
+                FilterItem itemArg2 = new FilterItem();
+                for (FilterItem tmpItem : beanArg2.getDataSet()){
+                    if(tmpItem.getName().equals(itemArg1.getName())){
+                        itemArg2 = tmpItem;
+                        break;
+                    }
+                }
+                changeItemStatus(beanArg1, itemArg1, beanArg2, itemArg2);
+            }
+        });
+
+        popAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
+                final FilterBean beanArg1 = popAdapter.getFilterData();
+                final FilterItem itemArg1 = (FilterItem) adapter.getItem(position);
+                if(itemArg1.isAllchoseFlag() && itemArg1.isSelected()){
+                    Log.d(TAG, "return");
+                    return;
+                }
+                FilterBean beanArg2 = new FilterBean();
+                ArrayList<FilterBean> beans = (ArrayList<FilterBean>) verticalFilterAdapter.getData();
+                for (FilterBean tmpBean : beans){
+                    if(tmpBean.getName().equals(beanArg1.getName())){
+                        beanArg2 = tmpBean;
+                        break;
+                    }
+                }
+                FilterItem itemArg2 = new FilterItem();
+                for (FilterItem tmpItem : beanArg2.getDataSet()){
+                    if(tmpItem.getName().equals(itemArg1.getName())){
+                        itemArg2 = tmpItem;
+                        break;
+                    }
+                }
+                changeItemStatus(beanArg1, itemArg1, beanArg2, itemArg2);
+            }
+        });
+
+        drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+
+            }
+
+            @Override
+            public void onDrawerOpened(View drawerView) {
+
+            }
+
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                checkFilterStatus4View();
+                changeSearchGoods();
+            }
+
+            @Override
+            public void onDrawerStateChanged(int newState) {
+
+            }
+        });
+        initPriceDef();
+    }
+
+    private void initPriceDef(){
+        priceDef = LayoutInflater.from(this).inflate(R.layout.foot_pricedef, null);
+        priceDef_min = (EditText) priceDef.findViewById(R.id.pricedef_min);
+        priceDef_max = (EditText) priceDef.findViewById(R.id.pricedef_max);
+        priceDef.setVisibility(View.GONE);
+        priceDef_min.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                Log.d(TAG, "before text changed");
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                textChanged();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                Log.d(TAG, "after text changed");
+            }
+        });
+        priceDef_max.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                textChanged();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
+        priceDef_min.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if(hasFocus){
+                    verticalFilterItemAdapter.getFilterBean().setSelected(true);
+                    verticalFilterItemAdapter.getFilterBean().setSelectedName("");
+                    for(FilterItem item : verticalFilterItemAdapter.getData()){
+                        item.setSelected(false);
+                    }
+                }else{
+                    textChanged();
+                }
+                verticalFilterAdapter.notifyDataSetChanged();
+                verticalFilterItemAdapter.notifyDataSetChanged();
+            }
+        });
+        verticalFilterItemAdapter.addFooterView(priceDef);
+    }
+
+    private void textChanged(){
+        if(priceDef_max.getText().toString().length() == 0 && priceDef_min.getText().toString().length() == 0){
+            priceDefALLStatus();
+        }else if(priceDef_max.getText().toString().length() != 0 || priceDef_min.getText().toString().length() != 0){
+            priceDefChangeStatus();
+        }
+    }
+
+    private void priceDefChangeStatus(){
+        verticalFilterItemAdapter.getFilterBean().setSelected(true);
+        verticalFilterItemAdapter.getFilterBean().setSelectedName(priceDef_min.getText().toString() + "---" + priceDef_max.getText().toString());
+        for (FilterItem item : verticalFilterItemAdapter.getData()){
+            item.setSelected(false);
+        }
+//        verticalFilterAdapter.notifyDataSetChanged();
+//        verticalFilterItemAdapter.notifyDataSetChanged();
+    }
+
+    private void priceDefALLStatus(){
+        verticalFilterItemAdapter.getFilterBean().setSelected(false);
+        for (FilterItem filterItem : verticalFilterItemAdapter.getData()){
+            if(!filterItem.isAllchoseFlag()){
+                filterItem.setSelected(false);
+            }else{
+                filterItem.setSelected(true);
+            }
+        }
+//        verticalFilterItemAdapter.notifyDataSetChanged();
+//        verticalFilterAdapter.notifyDataSetChanged();
+    }
+
+    private void changeItemStatus(FilterBean beanArg1, FilterItem itemArg1, FilterBean beanArg2, FilterItem itemArg2) {
+        if(beanArg1.getType() == FilterType.CATEGORY && itemArg1.isAllchoseFlag()){
+            categoryChange();
+        }else if(beanArg1.getType() == FilterType.CATEGORY && (!itemArg1.isAllchoseFlag())){
+            if(itemArg1.isSelected()){
+                categoryChange();
+            }else{
+                categoryChange(itemArg1);
+            }
+        }
+
+        if(itemArg1.isAllchoseFlag()){
+            clearFilterStatus(beanArg1,beanArg2);
+        }else if(itemArg1.isSelected()){
+            switch (beanArg1.getType()){
+                case CATEGORY:
+                    Observable.just(beanArg1,beanArg2)
+                            .observeOn(AndroidSchedulers.mainThread())
                             .doOnNext(new Consumer<FilterBean>() {
                                 @Override
                                 public void accept(@NonNull FilterBean filterBean) throws Exception {
-                                    filterBean.setSelected(true);
-                                    filterBean.setSelectedName(verticalItem.getName());
+                                    filterBean.setSelected(false);
+                                    filterBean.setSelectedName("");
                                 }
                             })
                             .flatMap(new Function<FilterBean, ObservableSource<FilterItem>>() {
@@ -559,285 +729,218 @@ public class SearchGoodActivity extends AppCompatActivity {
                                     return Observable.fromIterable(filterBean.getDataSet());
                                 }
                             })
-                            .filter(new Predicate<FilterItem>() {
+                            .subscribe(new Observer<FilterItem>() {
                                 @Override
-                                public boolean test(@NonNull FilterItem filterItem) throws Exception {
-                                    return !filterItem.isAllchoseFlag();
+                                public void onSubscribe(@NonNull Disposable d) {
+
                                 }
-                            })
-                            .doOnNext(new Consumer<FilterItem>() {
+
                                 @Override
-                                public void accept(@NonNull FilterItem filterItem) throws Exception {
-                                    filterItem.setSelected(false);
+                                public void onNext(@NonNull FilterItem filterItem) {
+                                    if(filterItem.isAllchoseFlag()){
+                                        filterItem.setSelected(true);
+                                    }else{
+                                        filterItem.setSelected(false);
+                                    }
                                 }
-                            })
-                            .doFinally(new Action() {
+
                                 @Override
-                                public void run() throws Exception {
-                                    verticalItem.setSelected(true);
+                                public void onError(@NonNull Throwable e) {
+
+                                }
+
+                                @Override
+                                public void onComplete() {
+                                    popAdapter.notifyDataSetChanged();
+                                    horizontalFilterAdapter.notifyDataSetChanged();
+                                    verticalFilterAdapter.notifyDataSetChanged();
+                                    verticalFilterItemAdapter.notifyDataSetChanged();
                                 }
                             });
-
-
-                }else if(!verticalItem.isSelected()){
-
-                }
-
-                final FilterItem item = (FilterItem) adapter.getItem(position);
-                Log.d(TAG, "22" + item.isSelected());
-                FilterBean bean = new FilterBean();     //bean:当前的bean
-                for (FilterBean tmpBean : verticalFilterAdapter.getData()) {
-                    if (tmpBean.isVertacalShow()) {
-                        bean = tmpBean;
-                        break;
-                    }
-                }
-                FilterBean anotherBean = new FilterBean();    //otherBean:对应的Bean
-                for (FilterBean tmpBean2 : horizontalFilterAdapter.getData()) {
-                    if (tmpBean2.getName().equals(bean.getName())) {
-                        otherBean = tmpBean2;
-                        break;
-                    }
-                }
-                FilterItem otherItem = new FilterItem();    //对应的item
-                for (FilterItem tmpItem : otherBean.getDataSet()) {
-                    if (tmpItem.getName().equals(item.getName())) {
-                        otherItem = tmpItem;
-                        break;
-                    }
-                }
-                if (bean.getType() == FilterType.CATEGORY) {
-                    removePeoperty();
-                    changePeoperty(item);
-                    Log.d(TAG, "33");
-                    if (bean.isSelected()) {
-                        if (item.isSelected()) {
-                            item.setSelected(false);
-                            otherItem.setSelected(false);
-                            bean.setSelected(false);
-                            otherBean.setSelected(false);
-                        } else {
-                            for (FilterItem tmpItem : bean.getDataSet()) {
-                                if (tmpItem.isSelected()) {
-                                    tmpItem.setSelected(false);
-                                    break;
+                            break;
+                case PRICE:
+                    Observable.just(beanArg1)
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .doOnNext(new Consumer<FilterBean>() {
+                                @Override
+                                public void accept(@NonNull FilterBean filterBean) throws Exception {
+                                    filterBean.setSelected(false);
+                                    filterBean.setSelectedName("");
                                 }
-                            }
-                            for (FilterItem tmpItem : otherBean.getDataSet()) {
-                                if (tmpItem.isSelected()) {
-                                    tmpItem.setSelected(false);
-                                    break;
+                            })
+                            .flatMap(new Function<FilterBean, ObservableSource<FilterItem>>() {
+                                @Override
+                                public ObservableSource<FilterItem> apply(@NonNull FilterBean filterBean) throws Exception {
+                                    return Observable.fromIterable(filterBean.getDataSet());
                                 }
-                            }
-                            item.setSelected(true);
-                            otherItem.setSelected(true);
-                            bean.setSelectedName(item.getName());
-                            otherBean.setSelectedName(item.getName());
-                        }
-                    } else {
-                        item.setSelected(true);
-                        otherItem.setSelected(true);
-                        bean.setSelected(true);
-                        bean.setSelectedName(item.getName());
-                        otherBean.setSelected(true);
-                        otherBean.setSelectedName(item.getName());
-                    }
-                } else if (bean.getType() == FilterType.PRICE) {
-                    if (bean.isSelected()) {
-                        if (item.isSelected()) {
-                            item.setSelected(false);
-                            otherItem.setSelected(false);
-                            bean.setSelected(false);
-                            otherBean.setSelected(false);
-                        } else {
-                            for (FilterItem tmpItem : bean.getDataSet()) {
-                                if (tmpItem.isSelected()) {
-                                    tmpItem.setSelected(false);
-                                    break;
+                            })
+                            .subscribe(new Observer<FilterItem>() {
+                                @Override
+                                public void onSubscribe(@NonNull Disposable d) {
+
                                 }
-                            }
-                            for (FilterItem tmpItem : otherBean.getDataSet()) {
-                                if (tmpItem.isSelected()) {
-                                    tmpItem.setSelected(false);
-                                    break;
+
+                                @Override
+                                public void onNext(@NonNull FilterItem filterItem) {
+                                    if(filterItem.isAllchoseFlag()){
+                                        filterItem.setSelected(true);
+                                    }else{
+                                        filterItem.setSelected(false);
+                                    }
                                 }
-                            }
-                            item.setSelected(true);
-                            otherItem.setSelected(true);
-                            bean.setSelectedName(item.getName());
-                            otherBean.setSelectedName(item.getName());
+
+                                @Override
+                                public void onError(@NonNull Throwable e) {
+
+                                }
+
+                                @Override
+                                public void onComplete() {
+                                    popAdapter.notifyDataSetChanged();
+                                    horizontalFilterAdapter.notifyDataSetChanged();
+                                    verticalFilterAdapter.notifyDataSetChanged();
+                                    verticalFilterItemAdapter.notifyDataSetChanged();
+                                }
+                            });
+                    break;
+                case BRAND:
+                case PEOPERTY:
+                    itemArg1.setSelected(false);
+                    itemArg2.setSelected(false);
+                    boolean b2 = false;
+                    StringBuilder sb2 = new StringBuilder();
+                    for (FilterItem filterItem : beanArg1.getDataSet()){
+                        if(filterItem.isSelected()){
+                            b2 = true;
+                            sb2.append(filterItem.getName());
                         }
-                    } else {
-                        item.setSelected(true);
-                        bean.setSelected(true);
-                        bean.setSelectedName(item.getName());
                     }
-                } else {
-                    if (item.isSelected()) {
-                        item.setSelected(false);
-                        otherItem.setSelected(false);
-                        boolean seleted = false;
-                        StringBuilder sb = new StringBuilder();
-                        for (FilterItem tmpItem : bean.getDataSet()) {
-                            if (tmpItem.isSelected()) {
-                                seleted = true;
-                                sb.append(tmpItem.getName() + "  ");
+                    if(b2){
+                        beanArg1.setSelected(true);
+                        beanArg1.setSelectedName(sb2.toString());
+                        beanArg2.setSelected(true);
+                        beanArg2.setSelectedName(sb2.toString());
+                    }else{
+                        for (FilterItem item : beanArg1.getDataSet()){
+                            if(item.isAllchoseFlag()){
+                                item.setSelected(true);
+                                break;
                             }
                         }
-                        if (seleted) {
-                            bean.setSelected(true);
-                            bean.setSelectedName(sb.toString());
-                            otherBean.setSelected(true);
-                            otherBean.setSelectedName(sb.toString());
-                        } else {
-                            bean.setSelected(false);
-                            otherBean.setSelected(false);
-                        }
-                    } else {
-                        item.setSelected(true);
-                        otherItem.setSelected(true);
-                        StringBuilder sb = new StringBuilder();
-                        for (FilterItem tmpItem : bean.getDataSet()) {
-                            if (tmpItem.isSelected()) {
-                                sb.append(tmpItem.getName() + "  ");
+                        for (FilterItem item : beanArg2.getDataSet()){
+                            if(item.isAllchoseFlag()){
+                                item.setSelected(true);
+                                break;
                             }
                         }
-                        bean.setSelected(true);
-                        otherBean.setSelected(true);
-                        bean.setSelectedName(sb.toString());
-                        otherBean.setSelectedName(sb.toString());
+                        beanArg1.setSelected(false);
+                        beanArg2.setSelected(false);
                     }
-                }
-                if (bean.isSelected()) {
-                    selectedIcon.setVisibility(View.GONE);
-                } else {
-                    selectedIcon.setVisibility(View.VISIBLE);
-                }
-                horizontalFilterAdapter.notifyDataSetChanged();
-                popAdapter.notifyDataSetChanged();
-                verticalFilterAdapter.notifyDataSetChanged();
-                verticalFilterItemAdapter.notifyDataSetChanged();
-                Log.d(TAG, "44");
+                    popAdapter.notifyDataSetChanged();
+                    verticalFilterAdapter.notifyDataSetChanged();
+                    verticalFilterItemAdapter.notifyDataSetChanged();
+                    horizontalFilterAdapter.notifyDataSetChanged();
+                    break;
             }
-        });
 
-        popAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
-                                              @Override
-                                              public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
-                                                  if(position == 0){
+        }else if(!itemArg1.isSelected()){
+            for (FilterItem item : beanArg1.getDataSet()){
+                if(item.isAllchoseFlag()){
+                    item.setSelected(false);
+                    break;
+                }
+            }
+            for (FilterItem item : beanArg2.getDataSet()){
+                if(item.isAllchoseFlag()){
+                    item.setSelected(false);
+                    break;
+                }
+            }
+            switch (beanArg1.getType()){
+                case BRAND:
+                case PEOPERTY:
+                    itemArg1.setSelected(true);
+                    itemArg2.setSelected(true);
+                    StringBuilder sb2 = new StringBuilder();
+                    for (FilterItem filterItem : beanArg1.getDataSet()){
+                        if(filterItem.isSelected()){
+                            sb2.append(filterItem.getName());
+                            sb2.append(" ");
+                        }
+                    }
+                    beanArg1.setSelected(true);
+                    beanArg1.setSelectedName(sb2.toString());
+                    beanArg2.setSelected(true);
+                    beanArg2.setSelectedName(sb2.toString());
+                    verticalFilterAdapter.notifyDataSetChanged();
+                    verticalFilterItemAdapter.notifyDataSetChanged();
+                    horizontalFilterAdapter.notifyDataSetChanged();
+                    popAdapter.notifyDataSetChanged();
+                    break;
+                case CATEGORY:
+                case PRICE:
+                    for (FilterItem item : beanArg1.getDataSet()){
+                        if(item.isSelected()){
+                            item.setSelected(false);
+                            break;
+                        }
+                    }
+                    itemArg1.setSelected(true);
+                    StringBuilder sb3 = new StringBuilder();
+                    for (FilterItem filterItem : beanArg1.getDataSet()){
+                        if(filterItem.isSelected()){
+                            sb3.append(filterItem.getName());
+                            sb3.append(" ");
+                        }
+                    }
+                    beanArg1.setSelected(true);
+                    beanArg1.setSelectedName(sb3.toString());
+                    beanArg2.setSelected(true);
+                    beanArg2.setSelectedName(sb3.toString());
+                    popAdapter.notifyDataSetChanged();
+                    verticalFilterAdapter.notifyDataSetChanged();
+                    verticalFilterItemAdapter.notifyDataSetChanged();
+                    horizontalFilterAdapter.notifyDataSetChanged();
+            }
+        }
+        Log.d(TAG, "verticalChange");
+    }
 
-                                                  }
-                                                  PeopertyPopAdapter popAdapter = (PeopertyPopAdapter) adapter;
-                                                  final FilterBean bean = popAdapter.getFilterData();
-                                                  final FilterItem item = (FilterItem) adapter.getItem(position);
-                                                  FilterBean otherBean = new FilterBean();
-                                                  for (FilterBean tmpBean : verticalFilterAdapter.getData()) {
-                                                      if (tmpBean.getName().equals(bean.getName())) {
-                                                          otherBean = tmpBean;
-                                                          break;
-                                                      }
-                                                  }
-                                                  FilterItem verticalItem = new FilterItem();
-                                                  for (FilterItem tmpItem : otherBean.getDataSet()) {
-                                                      if (tmpItem.getName().equals(item.getName())) {
-                                                          verticalItem = tmpItem;
-                                                          break;
-                                                      }
-                                                  }
-                                                  if (bean.getType() == FilterType.CATEGORY) {
-                                                      removePeoperty();
-                                                      changePeoperty(item);
-                                                      if (bean.isSelected()) {
-                                                          if (item.isSelected()) {
-                                                              item.setSelected(false);
-                                                              verticalItem.setSelected(false);
-                                                              bean.setSelected(false);
-                                                              otherBean.setSelected(false);
+    private void checkFilterStatus4View(){
+        Observable.fromIterable(verticalFilterAdapter.getData())
+                .observeOn(AndroidSchedulers.mainThread())
+                .any(new Predicate<FilterBean>() {
+                    @Override
+                    public boolean test(@NonNull FilterBean filterBean) throws Exception {
+                        return filterBean.isSelected();
+                    }
+                })
+                .subscribe(new SingleObserver<Boolean>() {
+                    @Override
+                    public void onSubscribe(@NonNull Disposable d) {
 
-                                                          } else {
-                                                              for (FilterItem tmpItem : bean.getDataSet()) {
-                                                                  if (tmpItem.isSelected()) {
-                                                                      tmpItem.setSelected(false);
-                                                                      break;
-                                                                  }
-                                                              }
-                                                              for (FilterItem tmpItem : otherBean.getDataSet()) {
-                                                                  if (tmpItem.isSelected()) {
-                                                                      tmpItem.setSelected(false);
-                                                                      break;
-                                                                  }
-                                                              }
-                                                              item.setSelected(true);
-                                                              verticalItem.setSelected(true);
-                                                              bean.setSelectedName(item.getName());
-                                                              otherBean.setSelectedName(item.getName());
-                                                          }
-                                                      } else {
-                                                          item.setSelected(true);
-                                                          verticalItem.setSelected(true);
-                                                          bean.setSelected(true);
-                                                          bean.setSelectedName(item.getName());
-                                                          otherBean.setSelected(true);
-                                                          otherBean.setSelectedName(item.getName());
-                                                      }
-                                                  } else {
-                                                      if (item.isSelected()) {
-                                                          item.setSelected(false);
-                                                          verticalItem.setSelected(false);
-                                                          boolean seleted = false;
-                                                          StringBuilder sb = new StringBuilder();
-                                                          for (FilterItem tmpItem : bean.getDataSet()) {
-                                                              if (tmpItem.isSelected()) {
-                                                                  seleted = true;
-                                                                  sb.append(tmpItem.getName() + "  ");
-                                                              }
-                                                          }
-                                                          if (seleted) {
-                                                              bean.setSelected(true);
-                                                              bean.setSelectedName(sb.toString());
-                                                              otherBean.setSelected(true);
-                                                              otherBean.setSelectedName(sb.toString());
-                                                          } else {
-                                                              bean.setSelected(false);
-                                                              otherBean.setSelected(false);
-                                                          }
-                                                      } else {
-                                                          item.setSelected(true);
-                                                          verticalItem.setSelected(true);
-                                                          StringBuilder sb = new StringBuilder();
-                                                          for (FilterItem tmpItem : bean.getDataSet()) {
-                                                              if (tmpItem.isSelected()) {
-                                                                  sb.append(tmpItem.getName() + "  ");
-                                                              }
-                                                          }
-                                                          bean.setSelected(true);
-                                                          otherBean.setSelected(true);
-                                                          bean.setSelectedName(sb.toString());
-                                                          otherBean.setSelectedName(sb.toString());
-                                                      }
-                                                  }
-                                                  for (FilterBean itemBean : verticalFilterAdapter.getData()) {
-                                                      if (itemBean.isVertacalShow()) {
-                                                          if (itemBean.isSelected()) {
-                                                              selectedIcon.setVisibility(View.GONE);
-                                                          } else {
-                                                              selectedIcon.setVisibility(View.VISIBLE);
-                                                          }
-                                                      }
-                                                  }
-                                                  horizontalFilterAdapter.notifyDataSetChanged();
-                                                  popAdapter.notifyDataSetChanged();
-                                                  verticalFilterAdapter.notifyDataSetChanged();
-                                                  verticalFilterItemAdapter.notifyDataSetChanged();
-                                                  Log.d(TAG, "55");
-                                              }
-                                          }
-        );
+                    }
+
+                    @Override
+                    public void onSuccess(@NonNull Boolean aBoolean) {
+                        if(aBoolean){
+                            Log.d(TAG, "success");
+                            tochosebtn.setBackgroundResource(R.drawable.allshop_search_goodlist_tochose_pressed);
+                        }else {
+                            Log.d(TAG, "fail");
+                            tochosebtn.setBackgroundResource(R.drawable.allshop_search_goodlist_tochose_normal);
+                        }
+                    }
+
+                    @Override
+                    public void onError(@NonNull Throwable e) {
+                        Log.d(TAG, "check" + e.toString());
+                    }
+                });
     }
 
     private void clearFilterStatus(FilterBean bean, FilterBean otherBean) {
         Observable.just(bean,otherBean)
-                .subscribeOn(AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnNext(new Consumer<FilterBean>() {
                     @Override
@@ -853,17 +956,6 @@ public class SearchGoodActivity extends AppCompatActivity {
                         return Observable.fromIterable(filterBean.getDataSet());
                     }
                 })
-                .doOnNext(new Consumer<FilterItem>() {
-                    @Override
-                    public void accept(@NonNull FilterItem filterItem) throws Exception {
-                        if(!filterItem.isAllchoseFlag()){
-                            filterItem.setSelected(false);
-                        }else{
-                            filterItem.setSelected(true);
-                        }
-                    }
-                })
-                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<FilterItem>() {
                     @Override
                     public void onSubscribe(@NonNull Disposable d) {
@@ -872,7 +964,11 @@ public class SearchGoodActivity extends AppCompatActivity {
 
                     @Override
                     public void onNext(@NonNull FilterItem filterItem) {
-
+                        if(!filterItem.isAllchoseFlag()){
+                            filterItem.setSelected(false);
+                        }else{
+                            filterItem.setSelected(true);
+                        }
                     }
 
                     @Override
@@ -901,6 +997,10 @@ public class SearchGoodActivity extends AppCompatActivity {
         }
     }
 
+    private void categoryChange(FilterItem item){
+        removePeoperty();
+        changePeoperty(item);
+    }
     private void categoryChange() {
         removePeoperty();
         FilterItem filterItem = new FilterItem();
@@ -1244,7 +1344,6 @@ public class SearchGoodActivity extends AppCompatActivity {
                     public SearchGoodsParam apply(@NonNull List<SearchFilterParam> searchFilterParams) throws Exception {
                         SearchGoodsParam tmpParam = (SearchGoodsParam) param.clone();
                         SearchGoodsParam.DataBean data = (SearchGoodsParam.DataBean) tmpParam.getData().clone();
-                        Log.d(TAG, "come in");
                         Log.d(TAG, searchFilterParams.toString());
                         for (SearchFilterParam filterParam : searchFilterParams) {
                             Log.d(TAG, filterParam.getParam());
@@ -1341,7 +1440,11 @@ public class SearchGoodActivity extends AppCompatActivity {
 
                     @Override
                     public void onNext(@NonNull FilterItem filterItem) {
-
+                        if(!filterItem.isAllchoseFlag()){
+                            filterItem.setSelected(false);
+                        }else {
+                            filterItem.setSelected(true);
+                        }
                     }
 
                     @Override
@@ -1355,7 +1458,6 @@ public class SearchGoodActivity extends AppCompatActivity {
                         horizontalFilterAdapter.notifyDataSetChanged();
                         verticalFilterAdapter.notifyDataSetChanged();
                         verticalFilterItemAdapter.notifyDataSetChanged();
-                        selectedIcon.setVisibility(View.VISIBLE);
                     }
                 });
     }
@@ -1419,6 +1521,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .doOnNext(new Consumer<FilterBean>() {
                     @Override
                     public void accept(@NonNull FilterBean filterBean) throws Exception {
+                        filterHelper.addAllChoseItem(filterBean);
                         horizontalFilterAdapter.getData().add(filterBean);
                         verticalFilterAdapter.getData().add(filterBean);
                     }
@@ -1445,6 +1548,7 @@ public class SearchGoodActivity extends AppCompatActivity {
 
                     @Override
                     public void onComplete() {
+                        Log.d(TAG, "peopertyChange");
                         horizontalFilterAdapter.notifyDataSetChanged();
                         verticalFilterAdapter.notifyDataSetChanged();
                     }
@@ -1645,100 +1749,6 @@ public class SearchGoodActivity extends AppCompatActivity {
     public void onViewClickedTomain() {
         Intent it = new Intent(this, AllShopActivity.class);
         startActivity(it);
-    }
-
-    @OnClick(R.id.contenttop)
-    public void onViewClickAll() {
-        if(selectedIcon.getVisibility() == View.VISIBLE){
-            return;
-        }
-        for (FilterBean bean : verticalFilterAdapter.getData()){
-            if(bean.isVertacalShow() && bean.getType() == FilterType.CATEGORY){
-                categoryChange();
-                break;
-            }
-        }
-        Observable<FilterBean> B = Observable.fromIterable(verticalFilterAdapter.getData())
-                .filter(new Predicate<FilterBean>() {
-                    @Override
-                    public boolean test(@NonNull FilterBean filterBean) throws Exception {
-                        return filterBean.isVertacalShow() && filterBean.getType() == FilterType.PRICE;
-                    }
-                });
-        Observable<FilterBean> C = Observable.fromIterable(verticalFilterAdapter.getData())
-                .filter(new Predicate<FilterBean>() {
-                    @Override
-                    public boolean test(@NonNull FilterBean filterBean) throws Exception {
-                        return filterBean.isVertacalShow() && filterBean.getType() != FilterType.PRICE;
-                    }
-                });
-        Observable<FilterBean> D = C
-                .map(new Function<FilterBean, String>() {
-                    @Override
-                    public String apply(@NonNull FilterBean filterBean) throws Exception {
-                        return filterBean.getName();
-                    }
-                })
-                .flatMap(new Function<String, ObservableSource<FilterBean>>() {
-                    @Override
-                    public ObservableSource<FilterBean> apply(@NonNull String s) throws Exception {
-                        final String name = s;
-                        return Observable.fromIterable(horizontalFilterAdapter.getData())
-                                .filter(new Predicate<FilterBean>() {
-                                    @Override
-                                    public boolean test(@NonNull FilterBean filterBean) throws Exception {
-                                        return filterBean.getName().equals(name);
-                                    }
-                                });
-                    }
-                });
-        Observable.concat(B,C,D)
-                .doOnNext(new Consumer<FilterBean>() {
-                    @Override
-                    public void accept(@NonNull FilterBean filterBean) throws Exception {
-                        filterBean.setSelected(false);
-                        filterBean.setSelectedName("");
-                    }
-                })
-                .flatMap(new Function<FilterBean, ObservableSource<FilterItem>>() {
-                    @Override
-                    public ObservableSource<FilterItem> apply(@NonNull FilterBean filterBean) throws Exception {
-                        return Observable.fromIterable(filterBean.getDataSet());
-                    }
-                })
-                .doOnNext(new Consumer<FilterItem>() {
-                    @Override
-                    public void accept(@NonNull FilterItem filterItem) throws Exception {
-                        filterItem.setSelected(false);
-                    }
-                })
-                .subscribeOn(AndroidSchedulers.mainThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<FilterItem>() {
-                    @Override
-                    public void onSubscribe(@NonNull Disposable d) {
-
-                    }
-
-                    @Override
-                    public void onNext(@NonNull FilterItem filterItem) {
-
-                    }
-
-                    @Override
-                    public void onError(@NonNull Throwable e) {
-                        Log.d(TAG, e.toString());
-                        printErr(e);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        selectedIcon.setVisibility(View.VISIBLE);
-                        verticalFilterAdapter.notifyDataSetChanged();
-                        verticalFilterItemAdapter.notifyDataSetChanged();
-                        horizontalFilterAdapter.notifyDataSetChanged();
-                    }
-                });
     }
 
     @OnClick(R.id.vertical_confirm)

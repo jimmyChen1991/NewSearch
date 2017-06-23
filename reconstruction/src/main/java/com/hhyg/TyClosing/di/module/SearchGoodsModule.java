@@ -9,9 +9,11 @@ import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.google.gson.Gson;
 import com.hhyg.TyClosing.R;
 import com.hhyg.TyClosing.entities.search.PeopertyOfCate;
+import com.hhyg.TyClosing.entities.search.SearchFilterRes;
 import com.hhyg.TyClosing.entities.shopcart.ShopcartListParam;
 import com.hhyg.TyClosing.global.MyApplication;
 import com.hhyg.TyClosing.mgr.ClosingRefInfoMgr;
+import com.hhyg.TyClosing.ui.SearchGoodActivity;
 import com.hhyg.TyClosing.ui.adapter.search.GoodRecAdapter;
 import com.hhyg.TyClosing.ui.adapter.search.HorizontalFilterAdapter;
 import com.hhyg.TyClosing.ui.adapter.search.PeopertyPopAdapter;
@@ -154,5 +156,10 @@ public class SearchGoodsModule {
     VerticalFilterItemAdapter verticalFilterItemAdapter(){
         VerticalFilterItemAdapter adapter = new VerticalFilterItemAdapter();
         return adapter;
+    }
+
+    @Provides
+    SearchGoodActivity.FilterHelper helper(){
+        return new SearchGoodActivity.FilterHelper(new SearchFilterRes());
     }
 }

@@ -97,4 +97,7 @@
     <string name="filter">筛选</string>
     <string name="all">全部</string>
     <string name="only_hasstock">仅看有货</string>
+    <string name="price_def">价格区间 (元)</string>
+    <string name="price_min">最低价</string>
+    <string name="price_max">最高价</string>
 </resources>

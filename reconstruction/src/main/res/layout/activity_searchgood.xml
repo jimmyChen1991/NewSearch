@@ -55,7 +55,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
                 android:layout_width="wrap_content"
-                android:background="@drawable/goodlistchose_selector"/>
+                android:background="@drawable/allshop_search_goodlist_tochose_normal"/>
             <ImageButton
                 android:id="@+id/choseprice"
                 android:layout_width="wrap_content"
@@ -287,7 +287,6 @@
                 android:layout_weight="0.55"
                 android:paddingBottom="@dimen/dp_20"
                 android:orientation="vertical">
-                <include layout="@layout/head_verticalfilter"/>
                 <android.support.v7.widget.RecyclerView
                     android:id="@+id/peopertyitem_rv"
                     android:layout_width="match_parent"
