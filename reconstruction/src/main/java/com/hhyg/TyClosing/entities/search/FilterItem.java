@@ -4,13 +4,19 @@ package com.hhyg.TyClosing.entities.search;
  * Created by user on 2017/6/13.
  */
 
-public class FilterItem {
+public class FilterItem implements Cloneable{
     private String name;
     private String id;
     private String maxPrice;
     private String minPrice;
     private boolean selected;
     private boolean isAllchoseFlag;
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
     public String getName() {
         return name;
     }

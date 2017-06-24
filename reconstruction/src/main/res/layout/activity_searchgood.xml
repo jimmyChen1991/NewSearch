@@ -279,7 +279,8 @@
                     android:layout_marginTop="@dimen/dp_15"
                     android:layout_gravity="center"
                     android:text="@string/reset"
-                    android:background="@drawable/button_corner_selector"/>
+                    android:textColor="@color/delight"
+                    android:background="#f8e8d4"/>
             </LinearLayout>
             <LinearLayout
                 android:layout_width="1dp"
@@ -300,6 +301,7 @@
                     android:layout_weight="0.05"
                     android:layout_gravity="center"
                     android:text="@string/queding"
+                    android:textColor="@color/ffffff"
                     android:background="@drawable/button_corner_selector"/>
             </LinearLayout>
         </LinearLayout>

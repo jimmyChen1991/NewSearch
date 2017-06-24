@@ -425,8 +425,21 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 		UserTrackMgr.getInstance().onEvent("searchkey",searchWord);
 		HotSearchWord word = new HotSearchWord();
 		word.setWord(searchWord);
-		HistotyWords.add(word);
-		showWords(HistotyWords, historyGroup);
+		HotSearchWord wordInside = HistotyWords.get(HistotyWords.size() - 1);
+		boolean hasSame =  false;
+		for (HotSearchWord tmpWord : HistotyWords){
+			if(tmpWord.getWord().equals(searchWord)){
+				hasSame = true;
+				break;
+			}
+		}
+		if(hasSame){
+			Log.d(TAG, "in");
+		}else{
+			Log.d(TAG, "in2");
+			HistotyWords.add(word);
+			showWords(HistotyWords, historyGroup);
+		}
 		SearchGoodsParam.DataBean param =  new SearchGoodsParam.DataBean();
 		param.setKeyword(searchWord);
 		Intent it = new Intent(SearchActivity.this,SearchGoodActivity.class);

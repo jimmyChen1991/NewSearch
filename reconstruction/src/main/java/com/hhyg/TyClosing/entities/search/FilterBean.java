@@ -6,7 +6,7 @@ import java.util.ArrayList;
  * Created by user on 2017/6/13.
  */
 
-public class FilterBean {
+public class FilterBean implements  Cloneable{
     private FilterType type;
     private ArrayList<FilterItem> dataSet = new ArrayList<>();
     private String name;
@@ -14,6 +14,12 @@ public class FilterBean {
     private boolean showNow;
     private boolean vertacalShow;
     private String selectedName;
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
     public FilterType getType() {
         return type;
     }
