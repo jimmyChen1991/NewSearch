@@ -24,6 +24,9 @@ import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 
+import io.realm.Realm;
+import io.realm.RealmConfiguration;
+
 //import com.activeandroid.ActiveAndroid;
 
 /**
@@ -60,6 +63,9 @@ public class MyApplication extends Application implements HttpUtil {
         super.onCreate();
         mInstance = this;
         ImageHelper.LoaderInit(this);
+        Realm.init(this);
+        RealmConfiguration configuration = new RealmConfiguration.Builder().build();
+        Realm.setDefaultConfiguration(configuration);
         CrashHandler crashHandler = CrashHandler.getInstance();
         crashHandler.init(getApplicationContext());
         SharedPreferences pref =this.getSharedPreferences(this.getPackageName(), MODE_PRIVATE);

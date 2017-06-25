@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 public class DbOpenHelper extends SQLiteOpenHelper {
-	private static int version = 8;
+	private static int version = 9;
 	private static DbOpenHelper mInstance = new DbOpenHelper(MyApplication
 			.GetInstance().getApplicationContext(), "tyclosing.db");
 

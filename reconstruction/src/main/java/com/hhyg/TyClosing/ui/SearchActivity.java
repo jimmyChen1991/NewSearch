@@ -29,7 +29,6 @@ import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.google.gson.Gson;
 import com.hhyg.TyClosing.R;
 import com.hhyg.TyClosing.allShop.adapter.AllShopBaseAdapter;
-import com.hhyg.TyClosing.ui.adapter.search.AssociateAdapter;
 import com.hhyg.TyClosing.allShop.adapter.OnItemClickListener;
 import com.hhyg.TyClosing.allShop.handler.SimpleHandler;
 import com.hhyg.TyClosing.allShop.info.SpecialInfo;
@@ -42,6 +41,7 @@ import com.hhyg.TyClosing.di.module.CommonNetParamModule;
 import com.hhyg.TyClosing.entities.associate.AssociateParam;
 import com.hhyg.TyClosing.entities.associate.AssociateRes;
 import com.hhyg.TyClosing.entities.search.SearchGoodsParam;
+import com.hhyg.TyClosing.entities.search.SearchKeyWord;
 import com.hhyg.TyClosing.entities.search.SearchType;
 import com.hhyg.TyClosing.global.HttpUtil;
 import com.hhyg.TyClosing.global.INetWorkCallBack;
@@ -50,7 +50,7 @@ import com.hhyg.TyClosing.global.MyApplication;
 import com.hhyg.TyClosing.global.NetCallBackHandlerException;
 import com.hhyg.TyClosing.global.ProcMsgHelper;
 import com.hhyg.TyClosing.mgr.ClosingRefInfoMgr;
-import com.hhyg.TyClosing.mgr.UserTrackMgr;
+import com.hhyg.TyClosing.ui.adapter.search.AssociateAdapter;
 import com.hhyg.TyClosing.ui.base.BaseActivity;
 import com.hhyg.TyClosing.ui.view.AutoClearEditText;
 import com.hhyg.TyClosing.ui.view.AutoClearEditText.OnCommitBtnListener;
@@ -61,6 +61,7 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.UUID;
 
 import javax.inject.Inject;
 
@@ -74,6 +75,10 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
+import io.realm.Case;
+import io.realm.Realm;
+import io.realm.RealmResults;
+import io.realm.Sort;
 
 public class SearchActivity extends BaseActivity implements View.OnClickListener{
 	private static final String TAG = "searchActivity";
@@ -84,8 +89,8 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 	private HistorySearchProc mHistoryProc = new HistorySearchProc();
 	private LinearLayout ViewGroup;
 	private LinearLayout historyGroup;
-	private ArrayList<HotSearchWord> HotWords;
-	private ArrayList<HotSearchWord> HistotyWords = new ArrayList<>();
+	private ArrayList<SearchKeyWord> HotWords;
+	private ArrayList<SearchKeyWord> HistotyWords = new ArrayList<>();
 	private ArrayList<SpecialInfo> AdInfos;
 	private ListView mListView;
 	private MyAdapter mAdapter;
@@ -221,6 +226,13 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 		mHttpUtil.post(HOT_SEARCH_URI, MakeJsonString(),new NetCallBackHandlerException(exceptionHandler, mHotSearchProc));
 	}
 
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		Realm realm = Realm.getDefaultInstance();
+		realm.close();
+	}
+
 	class ExceptionHandler extends SimpleHandler{
 		@Override
 		public void handleMessage(Message msg) {
@@ -305,6 +317,12 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 		showNoHistory();
 	}
 	private void init(){
+		Realm realm = Realm.getDefaultInstance();
+		RealmResults<SearchKeyWord> wds = realm.where(SearchKeyWord.class)
+				.findAllSorted("updateTime", Sort.DESCENDING);
+		for (SearchKeyWord wd : wds){
+			HistotyWords.add(wd);
+		}
 		mAdapter = new MyAdapter(this);
 		mListView.setAdapter(mAdapter);
 		mAdapter.addItem(AdInfos);
@@ -333,7 +351,7 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 		historyGroup.addView(warning);
 	}
 
-	private void showWords(ArrayList<HotSearchWord> words,ViewGroup container){
+	private void showWords(ArrayList<SearchKeyWord> words,ViewGroup container){
 		container.removeAllViews();
 		int count = words.size();
 		final int maxWidth = (container.getMeasuredWidth() - container.getPaddingLeft() - container.getPaddingRight())/4*3;
@@ -346,7 +364,7 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
      	horizLL.setLayoutParams(layoutParams);
      	container.addView(horizLL);
 		for(int idx = 0;idx<count;idx++){
-			final HotSearchWord word = words.get(idx);
+			final SearchKeyWord word = words.get(idx);
 			LinearLayout.LayoutParams itemParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
 			Button view = new Button(this);
 			view.setMaxLines(1);
@@ -409,7 +427,7 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 		jumpToSearchGoodActivity(v);
 	}
 	private void jumpToSearchGoodActivity(View v){
-		HotSearchWord searchWord = (HotSearchWord) v.getTag();
+		SearchKeyWord searchWord = (SearchKeyWord) v.getTag();
 		if(searchWord.getSpecialId() != 0){
 			jumpToSpecialActivity(String.valueOf(searchWord.getSpecialId()));
 		}else{
@@ -422,22 +440,46 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 		startActivity(intent);
 	}
 	private void jumpToSearchGoodActivity(String searchWord){
-		UserTrackMgr.getInstance().onEvent("searchkey",searchWord);
-		HotSearchWord word = new HotSearchWord();
+		SearchKeyWord word = new SearchKeyWord();
 		word.setWord(searchWord);
-		HotSearchWord wordInside = HistotyWords.get(HistotyWords.size() - 1);
 		boolean hasSame =  false;
-		for (HotSearchWord tmpWord : HistotyWords){
+		for (SearchKeyWord tmpWord : HistotyWords){
 			if(tmpWord.getWord().equals(searchWord)){
 				hasSame = true;
 				break;
 			}
 		}
+		Realm realm = Realm.getDefaultInstance();
 		if(hasSame){
-			Log.d(TAG, "in");
+			realm.beginTransaction();
+			SearchKeyWord wd = realm.where(SearchKeyWord.class)
+					.equalTo("word",searchWord, Case.SENSITIVE)
+					.findFirst();
+			wd.setUpdateTime(String.valueOf(System.currentTimeMillis()));
+			realm.commitTransaction();
 		}else{
-			Log.d(TAG, "in2");
-			HistotyWords.add(word);
+			realm.beginTransaction();
+			if(realm.where(SearchKeyWord.class).count() < 10){
+				SearchKeyWord wd = realm.createObject(SearchKeyWord.class, UUID.randomUUID().toString());
+				wd.setWord(searchWord);
+				wd.setUpdateTime(String.valueOf(System.currentTimeMillis()));
+				HistotyWords.add(word);
+			}else{
+				RealmResults<SearchKeyWord> wd = realm.where(SearchKeyWord.class)
+						.findAllSorted("updateTime",Sort.DESCENDING);
+				wd.get(wd.size() -1)
+						.deleteFromRealm();
+				HistotyWords.clear();
+				SearchKeyWord wdNew = realm.createObject(SearchKeyWord.class, UUID.randomUUID().toString());
+				wdNew.setWord(searchWord);
+				wdNew.setUpdateTime(String.valueOf(System.currentTimeMillis()));
+				RealmResults<SearchKeyWord> wd2 = realm.where(SearchKeyWord.class)
+						.findAllSorted("updateTime",Sort.DESCENDING);
+				for (SearchKeyWord w : wd2){
+					HistotyWords.add(w);
+				}
+			}
+			realm.commitTransaction();
 			showWords(HistotyWords, historyGroup);
 		}
 		SearchGoodsParam.DataBean param =  new SearchGoodsParam.DataBean();
@@ -483,11 +525,11 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 		public void ProcMsg(String msgBody) throws JSONException, IOException {
 			JSONObject jsonObj = JSONObject.parseObject(msgBody);
 			JSONArray dataArray = jsonObj.getJSONArray("hotword");
-			ArrayList<HotSearchWord> hotWords = new ArrayList<>();
+			ArrayList<SearchKeyWord> hotWords = new ArrayList<>();
 			ArrayList<SpecialInfo> AD = new ArrayList<SpecialInfo>();
 			for (int idx = 0; idx < dataArray.size(); idx++) {
 				JSONObject json = dataArray.getJSONObject(idx);
-				HotSearchWord wordWrap = new HotSearchWord();
+				SearchKeyWord wordWrap = new SearchKeyWord();
 				wordWrap.setHightlight(json.getBooleanValue("highlight"));
 				wordWrap.setSpecialId(json.getIntValue("specialid"));
 				wordWrap.setWord(json.getString("word"));
@@ -503,8 +545,12 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 			}
 			SearchActivity.this.HotWords = hotWords;
 			SearchActivity.this.AdInfos = AD;
-			mHttpUtil.post(HISTORY_SEARCH_URI, MakeHistoryJson(),
-					new NetCallBackHandlerException(exceptionHandler, mHistoryProc));
+			mHandler.post(new Runnable() {
+				@Override
+				public void run() {
+					init();
+				}
+			});
 		}
 	}
 	class HistorySearchProc implements ProcMsgHelper{
@@ -512,10 +558,10 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 		public void ProcMsg(String msgBody) throws JSONException, IOException {
 			JSONObject jsonObj = JSONObject.parseObject(msgBody);
 			JSONArray dataArray = jsonObj.getJSONArray("data");
-			ArrayList<HotSearchWord> Words = new ArrayList<HotSearchWord>();
+			ArrayList<SearchKeyWord> Words = new ArrayList<SearchKeyWord>();
 			for (int idx = 0; idx < dataArray.size(); idx++) {
 				JSONObject json = dataArray.getJSONObject(idx);
-				HotSearchWord wordWrap = new HotSearchWord();
+				SearchKeyWord wordWrap = new SearchKeyWord();
 				wordWrap.setWord(json.getString("word"));
 				Words.add(wordWrap);
 			}
@@ -530,33 +576,4 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 		}
 	}
 
-	static class HotSearchWord{
-		private String word;
-		private boolean hightlight;
-		private int specialId;
-
-		public String getWord() {
-			return word;
-		}
-
-		public void setWord(String word) {
-			this.word = word;
-		}
-
-		public boolean isHightlight() {
-			return hightlight;
-		}
-
-		public void setHightlight(boolean hightlight) {
-			this.hightlight = hightlight;
-		}
-
-		public int getSpecialId() {
-			return specialId;
-		}
-
-		public void setSpecialId(int specialId) {
-			this.specialId = specialId;
-		}
-	}
 }

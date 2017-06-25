@@ -16,8 +16,15 @@ public class FilterBean implements  Cloneable{
     private String selectedName;
 
     @Override
-    protected Object clone() throws CloneNotSupportedException {
-        return super.clone();
+    public Object clone() throws CloneNotSupportedException {
+        FilterBean bean = null;
+        bean = (FilterBean) super.clone();
+        ArrayList<FilterItem> res = new ArrayList<>();
+        for (FilterItem item : dataSet){
+            res.add((FilterItem) item.clone());
+        }
+        bean.dataSet = res;
+        return bean;
     }
 
     public FilterType getType() {

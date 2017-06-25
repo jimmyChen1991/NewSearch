@@ -8,6 +8,7 @@ import com.afollestad.materialdialogs.Theme;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.google.gson.Gson;
 import com.hhyg.TyClosing.R;
+import com.hhyg.TyClosing.entities.search.FilterChangedRaw;
 import com.hhyg.TyClosing.entities.search.PeopertyOfCate;
 import com.hhyg.TyClosing.entities.search.SearchFilterRes;
 import com.hhyg.TyClosing.entities.shopcart.ShopcartListParam;
@@ -161,5 +162,12 @@ public class SearchGoodsModule {
     @Provides
     SearchGoodActivity.FilterHelper helper(){
         return new SearchGoodActivity.FilterHelper(new SearchFilterRes());
+    }
+
+    @Provides
+    FilterChangedRaw provideChangedRaw(){
+        FilterChangedRaw raw = new FilterChangedRaw();
+        raw.setAvailable("1");
+        return raw;
     }
 }

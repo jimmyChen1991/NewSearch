@@ -2,7 +2,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/pricedef_wrap"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
+    android:visibility="gone"
     android:paddingTop="@dimen/dp_18"
     android:paddingLeft="@dimen/dp_20">
     <TextView
@@ -12,6 +13,14 @@
         android:textSize="@dimen/sp_15"
         android:textColor="#363636"
         android:text="@string/price_def"/>
+    <ImageView
+        android:id="@+id/selected_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignTop="@+id/pricedef_title"
+        android:layout_marginTop="@dimen/dp_6"
+        android:background="@drawable/chosenimg" />
     <RelativeLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

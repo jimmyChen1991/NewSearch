@@ -112,7 +112,9 @@ public class SearchGoodsParam implements Cloneable{
          * activityId : 活动ID（非必须，多个之间用英文半角逗号隔开）
          * userCart : {"sign":"秘钥","userId":"用户id"}
          */
+        public void clear(){
 
+        }
         private String keyword;
         private String brandId;
         private String class1Id;

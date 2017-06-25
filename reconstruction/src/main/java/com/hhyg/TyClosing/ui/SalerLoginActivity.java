@@ -63,7 +63,7 @@ public class SalerLoginActivity extends BaseActivity{
 
 	private void initDataBase() {
 		mDb.execuate("CREATE TABLE IF NOT EXISTS shoppingcart(name, brand,spuname,attrinfo, stock,citamount,activename,citprice,activeprice,activecut,barcode,cnt,typeid,typename,activeid,full,fullreduce,imgurl,msprice)");
-        mDb.execuate("CREATE TABLE IF NOT EXISTS deletetable(name, brand,spuname,attrinfo, stock,citamount,activename,citprice,activeprice,activecut,barcode,cnt,typeid,typename,activeid,full,fullreduce,privilegecut,privilegeprice,imgurl,msprice)");
+		mDb.execuate("CREATE TABLE IF NOT EXISTS deletetable(name, brand,spuname,attrinfo, stock,citamount,activename,citprice,activeprice,activecut,barcode,cnt,typeid,typename,activeid,full,fullreduce,privilegecut,privilegeprice,imgurl,msprice)");
         mDb.execuate("CREATE TABLE IF NOT EXISTS order_info(orderid,totalcast,totalcnt,committime,ordertime,orderstatus,PRIMARY KEY(orderid))");
         mDb.execuate("CREATE TABLE IF NOT EXISTS orderitem_price(totalprice,cut,totalcast,orderid,FOREIGN KEY (orderid) REFERENCES order_info(orderid))");
         mDb.execuate("CREATE TABLE IF NOT EXISTS shoppingcat_infos(brand,name,attrinfo,citprice,activeprice,barcode,cnt,orderid,FOREIGN KEY (orderid) REFERENCES order_info(orderid) )");

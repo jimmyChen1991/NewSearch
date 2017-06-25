@@ -171,7 +171,8 @@
         <activity
                 android:name=".ui.SearchGoodActivity"
                 android:screenOrientation="portrait"
-                android:theme="@style/new_atytheme">
+                android:theme="@style/new_atytheme"
+                android:windowSoftInputMode="adjustPan">
         </activity>
 
     </application>

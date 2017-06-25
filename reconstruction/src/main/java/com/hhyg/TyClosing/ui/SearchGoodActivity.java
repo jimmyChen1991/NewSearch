@@ -1,6 +1,7 @@
 package com.hhyg.TyClosing.ui;
 
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -16,12 +17,15 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
@@ -38,6 +42,7 @@ import com.hhyg.TyClosing.di.componet.DaggerSearchGoodComponent;
 import com.hhyg.TyClosing.di.module.CommonNetParamModule;
 import com.hhyg.TyClosing.di.module.SearchGoodsModule;
 import com.hhyg.TyClosing.entities.search.FilterBean;
+import com.hhyg.TyClosing.entities.search.FilterChangedRaw;
 import com.hhyg.TyClosing.entities.search.FilterItem;
 import com.hhyg.TyClosing.entities.search.FilterType;
 import com.hhyg.TyClosing.entities.search.PeoperFilter;
@@ -97,7 +102,7 @@ import io.reactivex.schedulers.Schedulers;
  * Created by user on 2017/6/7.
  */
 
-public class SearchGoodActivity extends AppCompatActivity{
+public class SearchGoodActivity extends AppCompatActivity {
     private static final String TAG = "SearchGoodActivity";
     @BindView(R.id.backbtn)
     ImageButton backbtn;
@@ -139,6 +144,8 @@ public class SearchGoodActivity extends AppCompatActivity{
     ShopcartListParam shopcartListParam;
     @Inject
     FilterHelper filterHelper;
+    @Inject
+    FilterChangedRaw changedRaw;
     @BindView(R.id.chosehotsale)
     ImageButton chosehotsale;
     @BindView(R.id.chosenew)
@@ -186,12 +193,16 @@ public class SearchGoodActivity extends AppCompatActivity{
     TextView activitydetail;
     @BindView(R.id.activelayout)
     RelativeLayout activelayout;
+    @BindView(R.id.selected_icon)
+    ImageView selectedIcon;
+    @BindView(R.id.pricedef_min)
+    EditText pricedefMin;
+    @BindView(R.id.pricedef_max)
+    EditText pricedefMax;
+    @BindView(R.id.pricedef_wrap)
+    RelativeLayout pricedefWrap;
     private SearchFilterRes rawFilterRes;
     private PeopertyPopwindow popWindow;
-    private View priceDef;
-    private EditText priceDef_min;
-    private EditText priceDef_max;
-    private ArrayList<FilterBean> rawFilterBeans;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -242,6 +253,8 @@ public class SearchGoodActivity extends AppCompatActivity{
                     public SearchGoodsParam apply(@NonNull SearchGoods searchGoods) throws Exception {
                         Log.d(TAG, searchGoods.getData().getSearchKey());
                         param.getData().setKeyword(searchGoods.getData().getSearchKey());
+                        param_use.getData().setKeyword(searchGoods.getData().getSearchKey());
+                        param_raw.getData().setKeyword(searchGoods.getData().getSearchKey());
                         return param;
                     }
                 })
@@ -273,7 +286,7 @@ public class SearchGoodActivity extends AppCompatActivity{
                     @Override
                     public void accept(@NonNull ArrayList<FilterBean> filterBeen) throws Exception {
                         verticalFilterAdapter.setNewData(filterBeen);
-                        if(filterBeen.size() != 0){
+                        if (filterBeen.size() != 0) {
                             Log.d(TAG, "show");
                             verticalFilterAdapter.getOnItemClickListener().onItemClick(verticalFilterAdapter, null, 0);
                         }
@@ -305,7 +318,7 @@ public class SearchGoodActivity extends AppCompatActivity{
                 .flatMap(new Function<FilterBean, ObservableSource<SearchGoodsParam.DataBean>>() {
                     @Override
                     public ObservableSource<SearchGoodsParam.DataBean> apply(@NonNull FilterBean filterBean) throws Exception {
-                        int size = filterBean.getDataSet().size() -1 ;
+                        int size = filterBean.getDataSet().size() - 1;
                         Log.d(TAG, "ss" + size);
                         SearchGoodsParam.DataBean params[] = new SearchGoodsParam.DataBean[size];
                         for (int idx = 1; idx < size + 1; idx++) {
@@ -377,6 +390,45 @@ public class SearchGoodActivity extends AppCompatActivity{
                 });
     }
 
+//    @Override
+//    public boolean dispatchTouchEvent(MotionEvent ev) {
+//        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+//            View v = getCurrentFocus();
+//            if (isShouldHideInput(v, ev)) {
+//                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+//                if (imm != null) {
+//                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+//                }
+//            }
+//            return super.dispatchTouchEvent(ev);
+//        }
+//        // 必不可少，否则所有的组件都不会有TouchEvent了
+//        if (getWindow().superDispatchTouchEvent(ev)) {
+//            return true;
+//        }
+//        return onTouchEvent(ev);
+//    }
+//
+//    public boolean isShouldHideInput(View v, MotionEvent event) {
+//        if (v != null && (v instanceof EditText)) {
+//            int[] leftTop = {0, 0};
+//            //获取输入框当前的location位置
+//            v.getLocationInWindow(leftTop);
+//            int left = leftTop[0];
+//            int top = leftTop[1];
+//            int bottom = top + v.getHeight();
+//            int right = left + v.getWidth();
+//            if (event.getX() > left && event.getX() < right
+//                    && event.getY() > top && event.getY() < bottom) {
+//                // 点击的是输入框区域，保留点击EditText的事件
+//                return false;
+//            } else {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if ((keyCode == KeyEvent.KEYCODE_BACK) && (drawerLayout.isDrawerOpen(Gravity.RIGHT))) {
@@ -390,6 +442,9 @@ public class SearchGoodActivity extends AppCompatActivity{
     @Override
     protected void onResume() {
         super.onResume();
+        if (searchType == SearchType.ACTIVITY) {
+            getCaset();
+        }
     }
 
     @Override
@@ -464,10 +519,10 @@ public class SearchGoodActivity extends AppCompatActivity{
                 verticalFilterItemAdapter.setFilterBean(bean);
                 adapter.notifyDataSetChanged();
                 verticalFilterItemAdapter.setNewData(bean.getDataSet());
-                if(bean.getType() == FilterType.PRICE){
-                    priceDef.setVisibility(View.VISIBLE);
-                }else{
-                    priceDef.setVisibility(View.GONE);
+                if (bean.getType() == FilterType.PRICE) {
+                    pricedefWrap.setVisibility(View.VISIBLE);
+                } else {
+                    pricedefWrap.setVisibility(View.GONE);
                 }
             }
         });
@@ -481,7 +536,7 @@ public class SearchGoodActivity extends AppCompatActivity{
                 if (isChecked) {
                     param.getData().setAvailable("1");
                 } else {
-                    param.getData().setAvailable(null);
+                    param.getData().setAvailable("");
                 }
             }
         });
@@ -499,22 +554,21 @@ public class SearchGoodActivity extends AppCompatActivity{
                 final FilterBean bean = popAdapter.getFilterData();
                 FilterBean otherBean = new FilterBean();
                 ArrayList<FilterBean> beans = (ArrayList<FilterBean>) verticalFilterAdapter.getData();
-                for (FilterBean tmpBean : beans){
-                    if(tmpBean.getName().equals(bean.getName())){
+                for (FilterBean tmpBean : beans) {
+                    if (tmpBean.getName().equals(bean.getName())) {
                         otherBean = tmpBean;
                     }
                 }
                 clearFilterStatus(bean, otherBean);
             }
         });
-        final Button confim = (Button) popContent.findViewById(R.id.confirm);
-        confim.setOnClickListener(new View.OnClickListener() {
-                                      @Override
-                                      public void onClick(View view) {
-                                          changeSearchGoods();
-                                      }
-                                  }
-        );
+        Button confirm = (Button) popContent.findViewById(R.id.confirm);
+        confirm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                popWindow.dismiss();
+            }
+        });
         popWindow = new PeopertyPopwindow(this, popContent);
 
         horizontalFilterAdapter.setOnItemChildClickListener(new BaseQuickAdapter.OnItemChildClickListener() {
@@ -524,41 +578,57 @@ public class SearchGoodActivity extends AppCompatActivity{
                 bean.setShowNow(true);
                 adapter.notifyDataSetChanged();
                 popAdapter.setFilterData(bean);
+                copyFilter((ArrayList<FilterBean>) horizontalFilterAdapter.getData());
                 popWindow.showAsDropDown(attrGroupWrap, 0, 0);
             }
         });
         popWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
             @Override
             public void onDismiss() {
-                rawFilterBeans = (ArrayList<FilterBean>) verticalFilterAdapter.getData();
                 popAdapter.getFilterData().setShowNow(false);
                 horizontalFilterAdapter.notifyDataSetChanged();
                 checkFilterStatus4View();
-                changeSearchGoods();
+                if (checkFilter4Change((ArrayList<FilterBean>) horizontalFilterAdapter.getData())) {
+                    changeSearchGoods();
+                }
             }
         });
         verticalFilterItemAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
-                if(position == 0){
+                if (position == 0) {
                     Log.d(TAG, "asd");
                 }
                 final FilterBean beanArg1 = verticalFilterItemAdapter.getFilterBean();
                 final FilterItem itemArg1 = (FilterItem) adapter.getItem(position);
-                if(itemArg1.isAllchoseFlag() && itemArg1.isSelected()){
+                if (itemArg1.isAllchoseFlag() && itemArg1.isSelected()) {
                     return;
+                }
+                if(beanArg1.getType() == FilterType.PRICE){
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    if(getCurrentFocus() instanceof EditText){
+                        imm.hideSoftInputFromWindow(pricedefMin.getWindowToken(), 0);
+                        imm.hideSoftInputFromWindow(pricedefMax.getWindowToken(), 0);
+                        selectedIcon.setVisibility(View.GONE);
+                        pricedefMin.clearFocus();
+                        pricedefMax.clearFocus();
+                        pricedefMax.getText().clear();
+                        pricedefMin.getText().clear();
+                        }
+                    }
                 }
                 FilterBean beanArg2 = new FilterBean();
                 ArrayList<FilterBean> beans = (ArrayList<FilterBean>) horizontalFilterAdapter.getData();
-                for (FilterBean tmpBean : beans){
-                    if(tmpBean.getName().equals(beanArg1.getName())){
+                for (FilterBean tmpBean : beans) {
+                    if (tmpBean.getName().equals(beanArg1.getName())) {
                         beanArg2 = tmpBean;
                         break;
                     }
                 }
                 FilterItem itemArg2 = new FilterItem();
-                for (FilterItem tmpItem : beanArg2.getDataSet()){
-                    if(tmpItem.getName().equals(itemArg1.getName())){
+                for (FilterItem tmpItem : beanArg2.getDataSet()) {
+                    if (tmpItem.getName().equals(itemArg1.getName())) {
                         itemArg2 = tmpItem;
                         break;
                     }
@@ -572,21 +642,21 @@ public class SearchGoodActivity extends AppCompatActivity{
             public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
                 final FilterBean beanArg1 = popAdapter.getFilterData();
                 final FilterItem itemArg1 = (FilterItem) adapter.getItem(position);
-                if(itemArg1.isAllchoseFlag() && itemArg1.isSelected()){
+                if (itemArg1.isAllchoseFlag() && itemArg1.isSelected()) {
                     Log.d(TAG, "return");
                     return;
                 }
                 FilterBean beanArg2 = new FilterBean();
                 ArrayList<FilterBean> beans = (ArrayList<FilterBean>) verticalFilterAdapter.getData();
-                for (FilterBean tmpBean : beans){
-                    if(tmpBean.getName().equals(beanArg1.getName())){
+                for (FilterBean tmpBean : beans) {
+                    if (tmpBean.getName().equals(beanArg1.getName())) {
                         beanArg2 = tmpBean;
                         break;
                     }
                 }
                 FilterItem itemArg2 = new FilterItem();
-                for (FilterItem tmpItem : beanArg2.getDataSet()){
-                    if(tmpItem.getName().equals(itemArg1.getName())){
+                for (FilterItem tmpItem : beanArg2.getDataSet()) {
+                    if (tmpItem.getName().equals(itemArg1.getName())) {
                         itemArg2 = tmpItem;
                         break;
                     }
@@ -603,15 +673,13 @@ public class SearchGoodActivity extends AppCompatActivity{
 
             @Override
             public void onDrawerOpened(View drawerView) {
-                ArrayList<FilterBean> tmp = (ArrayList<FilterBean>) verticalFilterAdapter.getData();
-                rawFilterBeans = (ArrayList<FilterBean>) tmp.clone();
-
+                copyFilter((ArrayList<FilterBean>) verticalFilterAdapter.getData());
             }
 
             @Override
             public void onDrawerClosed(View drawerView) {
                 checkFilterStatus4View();
-                if(checkFilter4Change()){
+                if (checkFilter4Change((ArrayList<FilterBean>) verticalFilterAdapter.getData())) {
                     changeSearchGoods();
                 }
             }
@@ -624,43 +692,65 @@ public class SearchGoodActivity extends AppCompatActivity{
         initPriceDef();
     }
 
-    public boolean checkFilter4Change(){
+    private void copyFilter(ArrayList<FilterBean> source) {
+        changedRaw.getPriceBean().setMinPrice(pricedefMin.getText().toString());
+        changedRaw.getPriceBean().setMaxPrice(pricedefMax.getText().toString());
+        changedRaw.setAvailable(param.getData().getAvailable());
+        changedRaw.getFilterBeens().clear();
+        for (FilterBean bean : source) {
+            try {
+                changedRaw.getFilterBeens().add((FilterBean) bean.clone());
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public boolean checkFilter4Change(ArrayList<FilterBean> source) {
         Log.d(TAG, "start");
         boolean changed = false;
-        if(verticalFilterAdapter.getData().size() != rawFilterBeans.size()){
+        if(!param.getData().getAvailable().equals(changedRaw.getAvailable())){
+            return true;
+        }
+        String minPrice = pricedefMin.getText().toString();
+        String maxPrice = pricedefMax.getText().toString();
+        if(!(changedRaw.getPriceBean().getMinPrice().equals(minPrice) && changedRaw.getPriceBean().getMaxPrice().equals(maxPrice))){
+            return true;
+        }
+        if (source.size() != changedRaw.getFilterBeens().size()) {
             changed = true;
-        }else{
-            for (int index = 0 ;index < verticalFilterAdapter.getData().size() ;index ++){
-                FilterBean arg1 = verticalFilterAdapter.getData().get(index);
-                FilterBean arg2 = rawFilterBeans.get(index);
-                if(!arg1.getName().equals(arg2.getName())){
+        } else {
+            for (int index = 0; index < source.size(); index++) {
+                FilterBean arg1 = source.get(index);
+                FilterBean arg2 = changedRaw.getFilterBeens().get(index);
+                if (!arg1.getName().equals(arg2.getName())) {
                     changed = true;
                     break;
                 }
-                if(arg1.isSelected() != arg2.isSelected()){
+                if (arg1.isSelected() != arg2.isSelected()) {
                     changed = true;
                     break;
                 }
-                if(arg1.getDataSet().size() != arg2.getDataSet().size()){
+                if (arg1.getDataSet().size() != arg2.getDataSet().size()) {
                     changed = true;
                     break;
-                }else{
+                } else {
                     boolean shouldBreak = false;
-                    for (int index2 = 0; index2 < arg1.getDataSet().size();index2 ++){
-                        FilterItem item1 = arg1.getDataSet().get(0);
-                        FilterItem item2 = arg2.getDataSet().get(0);
-                        if(!item1.getName().equals(item2.getName())){
+                    for (int index2 = 0; index2 < arg1.getDataSet().size(); index2++) {
+                        FilterItem item1 = arg1.getDataSet().get(index2);
+                        FilterItem item2 = arg2.getDataSet().get(index2);
+                        if (!item1.getName().equals(item2.getName())) {
                             changed = true;
                             shouldBreak = true;
                             break;
                         }
-                        if(item1.isSelected() != item2.isSelected()){
+                        if (item1.isSelected() != item2.isSelected()) {
                             changed = true;
                             shouldBreak = true;
                             break;
                         }
                     }
-                    if(shouldBreak){
+                    if (shouldBreak) {
                         break;
                     }
                 }
@@ -670,62 +760,63 @@ public class SearchGoodActivity extends AppCompatActivity{
         return changed;
     }
 
-    private void initPriceDef(){
-        priceDef = LayoutInflater.from(this).inflate(R.layout.foot_pricedef, null);
-        priceDef_min = (EditText) priceDef.findViewById(R.id.pricedef_min);
-        priceDef_max = (EditText) priceDef.findViewById(R.id.pricedef_max);
-        priceDef.setVisibility(View.GONE);
-        verticalFilterItemAdapter.addFooterView(priceDef);
-    }
-
-    private void textChanged(){
-        if(priceDef_max.getText().toString().length() == 0 && priceDef_min.getText().toString().length() == 0){
-            priceDefALLStatus();
-        }else if(priceDef_max.getText().toString().length() != 0 || priceDef_min.getText().toString().length() != 0){
-            priceDefChangeStatus();
-        }
-    }
-
-    private void priceDefChangeStatus(){
-        verticalFilterItemAdapter.getFilterBean().setSelected(true);
-        verticalFilterItemAdapter.getFilterBean().setSelectedName(priceDef_min.getText().toString() + "---" + priceDef_max.getText().toString());
-        for (FilterItem item : verticalFilterItemAdapter.getData()){
-            item.setSelected(false);
-        }
-//        verticalFilterAdapter.notifyDataSetChanged();
-//        verticalFilterItemAdapter.notifyDataSetChanged();
-    }
-
-    private void priceDefALLStatus(){
-        verticalFilterItemAdapter.getFilterBean().setSelected(false);
-        for (FilterItem filterItem : verticalFilterItemAdapter.getData()){
-            if(!filterItem.isAllchoseFlag()){
-                filterItem.setSelected(false);
-            }else{
-                filterItem.setSelected(true);
+    private void initPriceDef() {
+        pricedefMin.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if(hasFocus){
+                    selectedIcon.setVisibility(View.VISIBLE);
+                    priceDefALLStatus();
+                }
             }
-        }
-//        verticalFilterItemAdapter.notifyDataSetChanged();
+        });
+    }
+
+//    private void textChanged() {
+//        if (pricedefMax.getText().toString().length() == 0 && pricedefMin.getText().toString().length() == 0) {
+//            priceDefALLStatus();
+//        } else if (pricedefMax.getText().toString().length() != 0 || pricedefMin.getText().toString().length() != 0) {
+//            priceDefChangeStatus();
+//        }
+//    }
+//
+//    private void priceDefChangeStatus() {
+//        verticalFilterItemAdapter.getFilterBean().setSelected(true);
+//        verticalFilterItemAdapter.getFilterBean().setSelectedName(pricedefMin.getText().toString() + "---" + pricedefMax.getText().toString());
+//        for (FilterItem item : verticalFilterItemAdapter.getData()) {
+//            item.setSelected(false);
+//        }
 //        verticalFilterAdapter.notifyDataSetChanged();
+//        verticalFilterItemAdapter.notifyDataSetChanged();
+//    }
+
+    private void priceDefALLStatus() {
+        verticalFilterItemAdapter.getFilterBean().setSelected(true);
+        verticalFilterItemAdapter.getFilterBean().setSelectedName("自定义");
+        for (FilterItem filterItem : verticalFilterItemAdapter.getData()) {
+            filterItem.setSelected(false);
+        }
+        verticalFilterItemAdapter.notifyDataSetChanged();
+        verticalFilterAdapter.notifyDataSetChanged();
     }
 
     private void changeItemStatus(FilterBean beanArg1, FilterItem itemArg1, FilterBean beanArg2, FilterItem itemArg2) {
-        if(beanArg1.getType() == FilterType.CATEGORY && itemArg1.isAllchoseFlag()){
+        if (beanArg1.getType() == FilterType.CATEGORY && itemArg1.isAllchoseFlag()) {
             categoryChange();
-        }else if(beanArg1.getType() == FilterType.CATEGORY && (!itemArg1.isAllchoseFlag())){
-            if(itemArg1.isSelected()){
+        } else if (beanArg1.getType() == FilterType.CATEGORY && (!itemArg1.isAllchoseFlag())) {
+            if (itemArg1.isSelected()) {
                 categoryChange();
-            }else{
+            } else {
                 categoryChange(itemArg1);
             }
         }
 
-        if(itemArg1.isAllchoseFlag()){
-            clearFilterStatus(beanArg1,beanArg2);
-        }else if(itemArg1.isSelected()){
-            switch (beanArg1.getType()){
+        if (itemArg1.isAllchoseFlag()) {
+            clearFilterStatus(beanArg1, beanArg2);
+        } else if (itemArg1.isSelected()) {
+            switch (beanArg1.getType()) {
                 case CATEGORY:
-                    Observable.just(beanArg1,beanArg2)
+                    Observable.just(beanArg1, beanArg2)
                             .observeOn(AndroidSchedulers.mainThread())
                             .doOnNext(new Consumer<FilterBean>() {
                                 @Override
@@ -748,9 +839,9 @@ public class SearchGoodActivity extends AppCompatActivity{
 
                                 @Override
                                 public void onNext(@NonNull FilterItem filterItem) {
-                                    if(filterItem.isAllchoseFlag()){
+                                    if (filterItem.isAllchoseFlag()) {
                                         filterItem.setSelected(true);
-                                    }else{
+                                    } else {
                                         filterItem.setSelected(false);
                                     }
                                 }
@@ -768,7 +859,7 @@ public class SearchGoodActivity extends AppCompatActivity{
                                     verticalFilterItemAdapter.notifyDataSetChanged();
                                 }
                             });
-                            break;
+                    break;
                 case PRICE:
                     Observable.just(beanArg1)
                             .observeOn(AndroidSchedulers.mainThread())
@@ -793,9 +884,9 @@ public class SearchGoodActivity extends AppCompatActivity{
 
                                 @Override
                                 public void onNext(@NonNull FilterItem filterItem) {
-                                    if(filterItem.isAllchoseFlag()){
+                                    if (filterItem.isAllchoseFlag()) {
                                         filterItem.setSelected(true);
-                                    }else{
+                                    } else {
                                         filterItem.setSelected(false);
                                     }
                                 }
@@ -820,27 +911,27 @@ public class SearchGoodActivity extends AppCompatActivity{
                     itemArg2.setSelected(false);
                     boolean b2 = false;
                     StringBuilder sb2 = new StringBuilder();
-                    for (FilterItem filterItem : beanArg1.getDataSet()){
-                        if(filterItem.isSelected()){
+                    for (FilterItem filterItem : beanArg1.getDataSet()) {
+                        if (filterItem.isSelected()) {
                             b2 = true;
                             sb2.append(filterItem.getName());
                             sb2.append("，");
                         }
                     }
-                    if(b2){
+                    if (b2) {
                         beanArg1.setSelected(true);
                         beanArg1.setSelectedName(sb2.deleteCharAt(sb2.length() - 1).toString());
                         beanArg2.setSelected(true);
                         beanArg2.setSelectedName(sb2.deleteCharAt(sb2.length() - 1).toString());
-                    }else{
-                        for (FilterItem item : beanArg1.getDataSet()){
-                            if(item.isAllchoseFlag()){
+                    } else {
+                        for (FilterItem item : beanArg1.getDataSet()) {
+                            if (item.isAllchoseFlag()) {
                                 item.setSelected(true);
                                 break;
                             }
                         }
-                        for (FilterItem item : beanArg2.getDataSet()){
-                            if(item.isAllchoseFlag()){
+                        for (FilterItem item : beanArg2.getDataSet()) {
+                            if (item.isAllchoseFlag()) {
                                 item.setSelected(true);
                                 break;
                             }
@@ -855,20 +946,20 @@ public class SearchGoodActivity extends AppCompatActivity{
                     break;
             }
 
-        }else if(!itemArg1.isSelected()){
-            for (FilterItem item : beanArg1.getDataSet()){
-                if(item.isAllchoseFlag()){
+        } else if (!itemArg1.isSelected()) {
+            for (FilterItem item : beanArg1.getDataSet()) {
+                if (item.isAllchoseFlag()) {
                     item.setSelected(false);
                     break;
                 }
             }
-            for (FilterItem item : beanArg2.getDataSet()){
-                if(item.isAllchoseFlag()){
+            for (FilterItem item : beanArg2.getDataSet()) {
+                if (item.isAllchoseFlag()) {
                     item.setSelected(false);
                     break;
                 }
             }
-            switch (beanArg1.getType()){
+            switch (beanArg1.getType()) {
                 case BRAND:
                 case PEOPERTY:
                     itemArg1.setSelected(true);
@@ -885,8 +976,8 @@ public class SearchGoodActivity extends AppCompatActivity{
                     break;
                 case CATEGORY:
                 case PRICE:
-                    for (FilterItem item : beanArg1.getDataSet()){
-                        if(item.isSelected()){
+                    for (FilterItem item : beanArg1.getDataSet()) {
+                        if (item.isSelected()) {
                             item.setSelected(false);
                             break;
                         }
@@ -908,8 +999,8 @@ public class SearchGoodActivity extends AppCompatActivity{
 
     private String buildSeletedName(FilterBean beanArg1) {
         StringBuilder sb = new StringBuilder();
-        for (FilterItem item : beanArg1.getDataSet()){
-            if(item.isSelected()){
+        for (FilterItem item : beanArg1.getDataSet()) {
+            if (item.isSelected()) {
                 sb.append(item.getName());
                 sb.append("，");
             }
@@ -918,7 +1009,7 @@ public class SearchGoodActivity extends AppCompatActivity{
         return sb.toString();
     }
 
-    private void checkFilterStatus4View(){
+    private void checkFilterStatus4View() {
         Observable.fromIterable(verticalFilterAdapter.getData())
                 .observeOn(AndroidSchedulers.mainThread())
                 .any(new Predicate<FilterBean>() {
@@ -935,10 +1026,10 @@ public class SearchGoodActivity extends AppCompatActivity{
 
                     @Override
                     public void onSuccess(@NonNull Boolean aBoolean) {
-                        if(aBoolean){
+                        if (aBoolean) {
                             Log.d(TAG, "success");
                             tochosebtn.setBackgroundResource(R.drawable.allshop_search_goodlist_tochose_pressed);
-                        }else {
+                        } else {
                             Log.d(TAG, "fail");
                             tochosebtn.setBackgroundResource(R.drawable.allshop_search_goodlist_tochose_normal);
                         }
@@ -952,7 +1043,7 @@ public class SearchGoodActivity extends AppCompatActivity{
     }
 
     private void clearFilterStatus(FilterBean bean, FilterBean otherBean) {
-        Observable.just(bean,otherBean)
+        Observable.just(bean, otherBean)
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnNext(new Consumer<FilterBean>() {
                     @Override
@@ -976,9 +1067,9 @@ public class SearchGoodActivity extends AppCompatActivity{
 
                     @Override
                     public void onNext(@NonNull FilterItem filterItem) {
-                        if(!filterItem.isAllchoseFlag()){
+                        if (!filterItem.isAllchoseFlag()) {
                             filterItem.setSelected(false);
-                        }else{
+                        } else {
                             filterItem.setSelected(true);
                         }
                     }
@@ -1001,18 +1092,19 @@ public class SearchGoodActivity extends AppCompatActivity{
     }
 
     private void printStatus() {
-        for (FilterBean bean : verticalFilterAdapter.getData()){
+        for (FilterBean bean : verticalFilterAdapter.getData()) {
             Log.d(TAG, "x" + bean.isSelected());
-            for (FilterItem item : bean.getDataSet()){
+            for (FilterItem item : bean.getDataSet()) {
                 Log.d(TAG, "c" + item.isSelected());
             }
         }
     }
 
-    private void categoryChange(FilterItem item){
+    private void categoryChange(FilterItem item) {
         removePeoperty();
         changePeoperty(item);
     }
+
     private void categoryChange() {
         removePeoperty();
         FilterItem filterItem = new FilterItem();
@@ -1022,16 +1114,16 @@ public class SearchGoodActivity extends AppCompatActivity{
 
     private void addToShopcart(SearchGoods.DataBean.GoodsListBean bean) {
         final int choseCnt;
-        if(!ShoppingCartMgr.getInstance().isInfoExist(bean.getBarcode())){
+        if (!ShoppingCartMgr.getInstance().isInfoExist(bean.getBarcode())) {
             choseCnt = 1;
-        }else{
-            choseCnt = ShoppingCartMgr.getInstance().getInfoByBarCode(bean.getBarcode()).cnt +1;
+        } else {
+            choseCnt = ShoppingCartMgr.getInstance().getInfoByBarCode(bean.getBarcode()).cnt + 1;
         }
-        if(choseCnt > bean.getStock()){
+        if (choseCnt > bean.getStock()) {
             Toast.makeText(MyApplication.GetInstance(), "该商品库存不足", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (bean.getStock() > 0){
+        if (bean.getStock() > 0) {
             SpuInfo spu = new SpuInfo();
             spu.barCode = bean.getBarcode();
             spu.activeId = bean.getActive_code();
@@ -1040,28 +1132,28 @@ public class SearchGoodActivity extends AppCompatActivity{
             spu.citAmount = 1000;
             spu.attrInfo = bean.getName();
             spu.msPrice = bean.getMianshui_price();
-            if(bean.getImage() != null && !bean.getImage().equals("")){
+            if (bean.getImage() != null && !bean.getImage().equals("")) {
                 ArrayList<String> imgLinks = new ArrayList<String>();
                 imgLinks.add(bean.getImage());
                 spu.imageLinks = imgLinks;
             }
             ShoppingCartMgr mShoppingCartMgr = ShoppingCartMgr.getInstance();
-            if(mShoppingCartMgr.isInfoExist(bean.getBarcode())){
-                mShoppingCartMgr.updateShopCnt(bean.getBarcode(),choseCnt);
-            }else{
+            if (mShoppingCartMgr.isInfoExist(bean.getBarcode())) {
+                mShoppingCartMgr.updateShopCnt(bean.getBarcode(), choseCnt);
+            } else {
                 mShoppingCartMgr.addInfo(spu, bean.getName(), bean.getBrand_name(), choseCnt, 1211, bean.getName());
             }
-            if(!(searchType == SearchType.PRIVILEGE)){
+            if (!(searchType == SearchType.PRIVILEGE)) {
                 mShoppingCartMgr.updateActiveId(bean.getBarcode(), bean.getActive_code());
-            }else{
-                if(bean.getActive_code() != null){
-                    mShoppingCartMgr.updateActiveId(bean.getBarcode(),bean.getActive_code());
-                }else{
+            } else {
+                if (bean.getActive_code() != null) {
+                    mShoppingCartMgr.updateActiveId(bean.getBarcode(), bean.getActive_code());
+                } else {
                     mShoppingCartMgr.updateActiveId(bean.getBarcode(), "");
                 }
             }
             Toast.makeText(MyApplication.GetInstance(), "加入购物车成功", Toast.LENGTH_SHORT).show();
-            if(!(searchType == SearchType.PRIVILEGE)){
+            if (!(searchType == SearchType.PRIVILEGE)) {
                 getCaset();
             }
         }
@@ -1082,11 +1174,11 @@ public class SearchGoodActivity extends AppCompatActivity{
                     @Override
                     public ShopcartListParam apply(@NonNull List<ShoppingCartInfo> shoppingCartInfos) throws Exception {
                         ArrayList<ShopcartListParam.DataBean> res = new ArrayList<ShopcartListParam.DataBean>();
-                        for (ShoppingCartInfo info : shoppingCartInfos){
+                        for (ShoppingCartInfo info : shoppingCartInfos) {
                             ShopcartListParam.DataBean bean = new ShopcartListParam.DataBean();
                             bean.setBarcode(info.barCode);
                             bean.setActivity(info.activeId);
-                            bean.setNumber(""+info.cnt);
+                            bean.setNumber("" + info.cnt);
                             res.add(bean);
                         }
                         shopcartListParam.setData(res);
@@ -1115,8 +1207,8 @@ public class SearchGoodActivity extends AppCompatActivity{
 
                     @Override
                     public void onNext(@NonNull ShopcartListRes.DataBean dataBean) {
-                        CastDetail detail =  dataBean.getActive_columns().get(param.getData().getActivityId());
-                        setPrice(detail.getActive_price(),detail.getPreferentialPrice(),detail.getDesc_fee());
+                        CastDetail detail = dataBean.getActive_columns().get(param.getData().getActivityId());
+                        setPrice(detail.getActive_price(), detail.getPreferentialPrice(), detail.getDesc_fee());
                     }
 
                     @Override
@@ -1132,32 +1224,33 @@ public class SearchGoodActivity extends AppCompatActivity{
                 });
     }
 
-    private void setPrice(String cast2, String fee,String comment) {
-        if(cast2 != null && fee != null){
+    private void setPrice(String cast2, String fee, String comment) {
+        if (cast2 != null && fee != null) {
             cast.setText("小计   " + getString(R.string.server_settle_moeny) + cast2);
             cut.setText("优惠   " + getString(R.string.server_settle_moeny) + fee);
-        }else{
-            cast.setText("小计   " + getString(R.string.server_settle_moeny)+ "0");
+        } else {
+            cast.setText("小计   " + getString(R.string.server_settle_moeny) + "0");
             cut.setText("优惠   " + getString(R.string.server_settle_moeny) + "0");
         }
-        if(comment != null && !comment.equals("")){
+        if (comment != null && !comment.equals("")) {
+            comment = comment.replace("查看更多商品>", "");
+            comment = comment.replace("去凑单>", "");
             full.setVisibility(View.VISIBLE);
             fullin.setText(Html.fromHtml(comment));
-        }else{
+        } else {
             full.setVisibility(View.GONE);
         }
     }
 
     private void initSearchType() {
         if (searchType == SearchType.ACTIVITY) {
-            getCaset();
             bottomshopcat.setVisibility(View.VISIBLE);
             activelayout.setVisibility(View.VISIBLE);
             activitydetail.setText(getIntent().getStringExtra(getString(R.string.search_desc)));
-            goodsWrap.setPadding(40,0,40,220);
-        }else if(searchType == SearchType.PRIVILEGE){
+            goodsWrap.setPadding(40, 0, 40, 220);
+        } else if (searchType == SearchType.PRIVILEGE) {
             bottomshopcat.setVisibility(View.VISIBLE);
-            goodsWrap.setPadding(40,0,40,150);
+            goodsWrap.setPadding(40, 0, 40, 150);
             activelayout.setVisibility(View.VISIBLE);
             activitydetail.setText(getIntent().getStringExtra(getString(R.string.search_desc)));
             cast.setVisibility(View.GONE);
@@ -1238,6 +1331,54 @@ public class SearchGoodActivity extends AppCompatActivity{
                         return param;
                     }
                 });
+
+        Observable<SearchFilterParam> E = Observable.just(pricedefMin,pricedefMax)
+                .map(new Function<EditText, String>() {
+                    @Override
+                    public String apply(@NonNull EditText editText) throws Exception {
+                        return editText.getText().toString();
+                    }
+                })
+                .toList()
+                .toObservable()
+                .filter(new Predicate<List<String>>() {
+                    @Override
+                    public boolean test(@NonNull List<String> strings) throws Exception {
+                        boolean res = false;
+                        for (String num : strings){
+                            if(num.length() > 0){
+                                res = true;
+                            }
+                        }
+                        return res;
+                    }
+                })
+                .map(new Function<List<String>, SearchFilterParam>() {
+                    @Override
+                    public SearchFilterParam apply(@NonNull List<String> strings) throws Exception {
+                        SearchFilterParam filterParam = new SearchFilterParam();
+                        filterParam.setType(FilterType.PRICE);
+                        String value1 = strings.get(0);
+                        String value2 = strings.get(1);
+                        if(value1.length() > 0 && value2.length() >0){
+                            Integer intValue1 = Integer.valueOf(value1);
+                            Integer intValue2 = Integer.valueOf(value2);
+                            if(intValue1 > intValue2){
+                                filterParam.setParam(value2);
+                                filterParam.setParam2(value1);
+                            }else{
+                                filterParam.setParam(value1);
+                                filterParam.setParam2(value2);
+                            }
+                        }else if(pricedefMin.getText().length() > 0 ){
+                            filterParam.setParam(pricedefMin.getText().toString());
+                        }else if(pricedefMax.getText().length() > 0){
+                            filterParam.setParam2(pricedefMax.getText().toString());
+                        }
+                        return filterParam;
+                    }
+                });
+
         Observable<SearchFilterParam> C = Observable.fromIterable(verticalFilterAdapter.getData())
                 .filter(new Predicate<FilterBean>() {
                     @Override
@@ -1313,7 +1454,8 @@ public class SearchGoodActivity extends AppCompatActivity{
                         return filterItem.isSelected();
                     }
                 }).toList().toObservable();
-            }})
+            }
+        })
                 .zipWith(cD, new BiFunction<List<FilterItem>, FilterBean, PeoperFilter>() {
                     @Override
                     public PeoperFilter apply(@NonNull List<FilterItem> filterItems, @NonNull FilterBean filterBean) throws Exception {
@@ -1347,17 +1489,15 @@ public class SearchGoodActivity extends AppCompatActivity{
                         return param;
                     }
                 });
-        Observable.concat(A, B, C, D)
+        Observable.concatArray(A, B, C, D,E)
                 .toList()
                 .toObservable()
                 .map(new Function<List<SearchFilterParam>, SearchGoodsParam>() {
                     @Override
                     public SearchGoodsParam apply(@NonNull List<SearchFilterParam> searchFilterParams) throws Exception {
-                        SearchGoodsParam tmpParam = (SearchGoodsParam) param.clone();
-                        SearchGoodsParam.DataBean data = (SearchGoodsParam.DataBean) tmpParam.getData().clone();
+                        SearchGoodsParam.DataBean data = (SearchGoodsParam.DataBean) param_raw.getData().clone();
                         Log.d(TAG, searchFilterParams.toString());
                         for (SearchFilterParam filterParam : searchFilterParams) {
-                            Log.d(TAG, filterParam.getParam());
                             if (filterParam.getType() == FilterType.BRAND) {
                                 data.setBrandId(filterParam.getParam());
                             } else if (filterParam.getType() == FilterType.CATEGORY) {
@@ -1369,9 +1509,11 @@ public class SearchGoodActivity extends AppCompatActivity{
                                 data.setPropertyList(filterParam.getParam());
                             }
                         }
-                        tmpParam.setData(data);
-                        param_use.setData(data);
-                        return tmpParam;
+                        data.setPageNo(1);
+                        data.setAvailable(param.getData().getAvailable());
+                        data.setSortType(param.getData().getSortType());
+                        param.setData(data);
+                        return param;
                     }
                 })
                 .flatMap(new Function<SearchGoodsParam, ObservableSource<SearchGoods>>() {
@@ -1392,9 +1534,6 @@ public class SearchGoodActivity extends AppCompatActivity{
                     @Override
                     public void onSubscribe(@NonNull Disposable d) {
                         dialog.show();
-                        if (popWindow.isShowing()) {
-                            popWindow.dismiss();
-                        }
                     }
 
                     @Override
@@ -1404,6 +1543,7 @@ public class SearchGoodActivity extends AppCompatActivity{
                         if (searchGoods.getData().getGoodsList().size() == 0) {
                             goodRecAdapter.setEmptyView(R.layout.empty_view);
                         }
+
                     }
 
                     @Override
@@ -1451,9 +1591,9 @@ public class SearchGoodActivity extends AppCompatActivity{
 
                     @Override
                     public void onNext(@NonNull FilterItem filterItem) {
-                        if(!filterItem.isAllchoseFlag()){
+                        if (!filterItem.isAllchoseFlag()) {
                             filterItem.setSelected(false);
-                        }else {
+                        } else {
                             filterItem.setSelected(true);
                         }
                     }
@@ -1619,11 +1759,6 @@ public class SearchGoodActivity extends AppCompatActivity{
                 }
                 break;
         }
-        try {
-            param_use = (SearchGoodsParam) param.clone();
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
-        }
         bean.setPageNo(1);
         param_use.setData(bean);
         Observable.just(param_use)
@@ -1765,7 +1900,6 @@ public class SearchGoodActivity extends AppCompatActivity{
     @OnClick(R.id.vertical_confirm)
     public void onViewClickedVerticalConfirm(View view) {
         drawerLayout.closeDrawer(Gravity.RIGHT);
-        changeSearchGoods();
     }
 
     @OnClick(R.id.vertical_reset)
@@ -1802,7 +1936,7 @@ public class SearchGoodActivity extends AppCompatActivity{
                 addAllChoseItem(brandBean);
                 res.add(brandBean);
             }
-            if (searchFilterRes.getClass3List() != null && searchFilterRes.getClass3List().size() != 0  && searchFilterRes.getClass3List().size() != 1) {
+            if (searchFilterRes.getClass3List() != null && searchFilterRes.getClass3List().size() != 0 && searchFilterRes.getClass3List().size() != 1) {
                 FilterBean cateBean = new FilterBean();
                 cateBean.setType(FilterType.CATEGORY);
                 cateBean.setName("分类");
@@ -1832,12 +1966,12 @@ public class SearchGoodActivity extends AppCompatActivity{
             return res;
         }
 
-        private void addAllChoseItem(final FilterBean bean){
+        private void addAllChoseItem(final FilterBean bean) {
             FilterItem item = new FilterItem();
             item.setName("全部");
             item.setSelected(true);
             item.setAllchoseFlag(true);
-            bean.addItem(0,item);
+            bean.addItem(0, item);
         }
 
         private ArrayList<FilterBean> getprice(ArrayList<FilterBean> res) {
@@ -1847,21 +1981,21 @@ public class SearchGoodActivity extends AppCompatActivity{
                 priceBean.setName("价格");
                 for (SearchFilterRes.DataBean.PriceListBean bean : searchFilterRes.getPriceList()) {
                     FilterItem item = new FilterItem();
-                    if(bean.getMaxPrice() != null){
+                    if (bean.getMaxPrice() != null) {
                         item.setMaxPrice(bean.getMaxPrice());
                     }
                     item.setMinPrice(bean.getMinPrice());
-                    if(bean.getMaxPrice() != null){
+                    if (bean.getMaxPrice() != null) {
                         item.setName(bean.getMinPrice() + " --- " + bean.getMaxPrice());
-                    }else{
+                    } else {
                         item.setName(bean.getMinPrice());
                     }
                     priceBean.addItem(item);
                 }
                 addAllChoseItem(priceBean);
-                if(res.size() > 2){
+                if (res.size() > 2) {
                     res.add(2, priceBean);
-                }else{
+                } else {
                     res.add(priceBean);
                 }
             }
