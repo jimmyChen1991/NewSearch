@@ -12,9 +12,12 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils.TruncateAt;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -456,7 +459,14 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 					.equalTo("word",searchWord, Case.SENSITIVE)
 					.findFirst();
 			wd.setUpdateTime(String.valueOf(System.currentTimeMillis()));
+			HistotyWords.clear();
+			RealmResults<SearchKeyWord> wd2 = realm.where(SearchKeyWord.class)
+					.findAllSorted("updateTime",Sort.DESCENDING);
+			for (SearchKeyWord w : wd2){
+				HistotyWords.add(w);
+			}
 			realm.commitTransaction();
+			showWords(HistotyWords, historyGroup);
 		}else{
 			realm.beginTransaction();
 			if(realm.where(SearchKeyWord.class).count() < 10){
