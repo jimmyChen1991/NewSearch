@@ -201,6 +201,8 @@ public class SearchGoodActivity extends AppCompatActivity {
     EditText pricedefMax;
     @BindView(R.id.pricedef_wrap)
     RelativeLayout pricedefWrap;
+    @BindView(R.id.wrap)
+    View wrap;
     private SearchFilterRes rawFilterRes;
     private PeopertyPopwindow popWindow;
 
@@ -578,7 +580,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
                 popAdapter.setFilterData(bean);
                 copyFilter((ArrayList<FilterBean>) horizontalFilterAdapter.getData());
-                changeBackgroupAlpha((float) 0.7);
+                changeBackgroupAlpha(true);
                 popWindow.showAsDropDown(attrGroupWrap, 0, 0);
             }
         });
@@ -588,7 +590,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 popAdapter.getFilterData().setShowNow(false);
                 horizontalFilterAdapter.notifyDataSetChanged();
                 checkFilterStatus4View();
-                changeBackgroupAlpha(1);
+                changeBackgroupAlpha(false);
                 if (checkFilter4Change((ArrayList<FilterBean>) horizontalFilterAdapter.getData())) {
                     changeSearchGoods();
                 }
@@ -691,10 +693,17 @@ public class SearchGoodActivity extends AppCompatActivity {
         initPriceDef();
     }
 
-    private void changeBackgroupAlpha(float alpha) {
-        WindowManager.LayoutParams lp = getWindow().getAttributes();
-        lp.alpha = alpha;
-        getWindow().setAttributes(lp);
+    private void changeBackgroupAlpha(boolean showAlpha) {
+//        WindowManager.LayoutParams lp = getWindow().getAttributes();
+//        lp.alpha = alpha;
+//        getWindow().setAttributes(lp);
+        if(showAlpha){
+            wrap.setVisibility(View.VISIBLE);
+        }else {
+            wrap.setVisibility(View.GONE);
+        }
+        wrap.setAlpha((float) 0.3);
+//        goodsWrap.setBackgroundResource(R.color.myalpha);
     }
 
     private void copyFilter(ArrayList<FilterBean> source) {

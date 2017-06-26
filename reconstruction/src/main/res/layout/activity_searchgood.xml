@@ -129,6 +129,13 @@
                 android:fitsSystemWindows="true"
                 android:paddingLeft="20dp"
                 android:paddingRight="20dp"/>
+            <View
+                android:id="@+id/wrap"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_below="@id/activelayout"
+                android:visibility="gone"
+                android:background="#000000"/>
             <ImageButton
                 android:id="@+id/backtotop"
                 android:layout_width="wrap_content"
