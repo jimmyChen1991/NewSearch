@@ -10,18 +10,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.Editable;
 import android.text.Html;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -35,8 +32,10 @@ import android.widget.Toast;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.hhyg.TyClosing.R;
 import com.hhyg.TyClosing.apiService.SearchSevice;
+import com.hhyg.TyClosing.config.Constants;
 import com.hhyg.TyClosing.di.componet.DaggerCommonNetParamComponent;
 import com.hhyg.TyClosing.di.componet.DaggerSearchGoodComponent;
 import com.hhyg.TyClosing.di.module.CommonNetParamModule;
@@ -70,6 +69,7 @@ import com.hhyg.TyClosing.ui.adapter.search.VerticalFilterAdapter;
 import com.hhyg.TyClosing.ui.adapter.search.VerticalFilterItemAdapter;
 import com.hhyg.TyClosing.ui.view.PeopertyPopwindow;
 import com.hhyg.TyClosing.util.PauseOnRecScrollListener;
+import com.kyleduo.switchbutton.SwitchButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -176,7 +176,7 @@ public class SearchGoodActivity extends AppCompatActivity {
     Button verticalConfirm;
     int totalPage;
     @BindView(R.id.has_stock_cb)
-    CheckBox hasStockCb;
+    SwitchButton hasStockCb;
     @BindView(R.id.cast)
     TextView cast;
     @BindView(R.id.cut)
@@ -252,9 +252,6 @@ public class SearchGoodActivity extends AppCompatActivity {
                     @Override
                     public SearchGoodsParam apply(@NonNull SearchGoods searchGoods) throws Exception {
                         Log.d(TAG, searchGoods.getData().getSearchKey());
-                        param.getData().setKeyword(searchGoods.getData().getSearchKey());
-                        param_use.getData().setKeyword(searchGoods.getData().getSearchKey());
-                        param_raw.getData().setKeyword(searchGoods.getData().getSearchKey());
                         return param;
                     }
                 })
@@ -534,8 +531,10 @@ public class SearchGoodActivity extends AppCompatActivity {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
+                    hasStockCb.setBackColorRes(R.color.maincolor);
                     param.getData().setAvailable("1");
                 } else {
+                    hasStockCb.setBackColorRes(R.color.delight);
                     param.getData().setAvailable("");
                 }
             }
@@ -579,6 +578,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
                 popAdapter.setFilterData(bean);
                 copyFilter((ArrayList<FilterBean>) horizontalFilterAdapter.getData());
+                changeBackgroupAlpha((float) 0.7);
                 popWindow.showAsDropDown(attrGroupWrap, 0, 0);
             }
         });
@@ -588,6 +588,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 popAdapter.getFilterData().setShowNow(false);
                 horizontalFilterAdapter.notifyDataSetChanged();
                 checkFilterStatus4View();
+                changeBackgroupAlpha(1);
                 if (checkFilter4Change((ArrayList<FilterBean>) horizontalFilterAdapter.getData())) {
                     changeSearchGoods();
                 }
@@ -604,10 +605,9 @@ public class SearchGoodActivity extends AppCompatActivity {
                 if (itemArg1.isAllchoseFlag() && itemArg1.isSelected()) {
                     return;
                 }
-                if(beanArg1.getType() == FilterType.PRICE){
+                if (beanArg1.getType() == FilterType.PRICE) {
                     InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                if (imm != null) {
-                    if(getCurrentFocus() instanceof EditText){
+                    if (imm != null) {
                         imm.hideSoftInputFromWindow(pricedefMin.getWindowToken(), 0);
                         imm.hideSoftInputFromWindow(pricedefMax.getWindowToken(), 0);
                         selectedIcon.setVisibility(View.GONE);
@@ -615,7 +615,6 @@ public class SearchGoodActivity extends AppCompatActivity {
                         pricedefMax.clearFocus();
                         pricedefMax.getText().clear();
                         pricedefMin.getText().clear();
-                        }
                     }
                 }
                 FilterBean beanArg2 = new FilterBean();
@@ -692,9 +691,17 @@ public class SearchGoodActivity extends AppCompatActivity {
         initPriceDef();
     }
 
+    private void changeBackgroupAlpha(float alpha) {
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        lp.alpha = alpha;
+        getWindow().setAttributes(lp);
+    }
+
     private void copyFilter(ArrayList<FilterBean> source) {
-        changedRaw.getPriceBean().setMinPrice(pricedefMin.getText().toString());
-        changedRaw.getPriceBean().setMaxPrice(pricedefMax.getText().toString());
+        String minPrice = pricedefMin.getText().toString();
+        String maxPrice = pricedefMax.getText().toString();
+        changedRaw.getPriceBean().setMinPrice(minPrice);
+        changedRaw.getPriceBean().setMaxPrice(maxPrice);
         changedRaw.setAvailable(param.getData().getAvailable());
         changedRaw.getFilterBeens().clear();
         for (FilterBean bean : source) {
@@ -709,12 +716,20 @@ public class SearchGoodActivity extends AppCompatActivity {
     public boolean checkFilter4Change(ArrayList<FilterBean> source) {
         Log.d(TAG, "start");
         boolean changed = false;
-        if(!param.getData().getAvailable().equals(changedRaw.getAvailable())){
+        if (!param.getData().getAvailable().equals(changedRaw.getAvailable())) {
             return true;
         }
         String minPrice = pricedefMin.getText().toString();
         String maxPrice = pricedefMax.getText().toString();
-        if(!(changedRaw.getPriceBean().getMinPrice().equals(minPrice) && changedRaw.getPriceBean().getMaxPrice().equals(maxPrice))){
+        String minPriceRaw = changedRaw.getPriceBean().getMinPrice();
+        String maxPriceRaw = changedRaw.getPriceBean().getMaxPrice();
+        if (minPrice != null && maxPrice != null && minPriceRaw != null && maxPriceRaw != null) {
+            if (!(minPriceRaw.equals(minPrice) && maxPriceRaw.equals(maxPrice))) {
+                return true;
+            }
+        } else if (minPrice != null && minPriceRaw == null) {
+            return true;
+        } else if (maxPrice != null && maxPriceRaw == null) {
             return true;
         }
         if (source.size() != changedRaw.getFilterBeens().size()) {
@@ -764,7 +779,7 @@ public class SearchGoodActivity extends AppCompatActivity {
         pricedefMin.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
-                if(hasFocus){
+                if (hasFocus) {
                     selectedIcon.setVisibility(View.VISIBLE);
                     priceDefALLStatus();
                 }
@@ -983,6 +998,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                         }
                     }
                     itemArg1.setSelected(true);
+                    itemArg2.setSelected(true);
                     String seletedName1 = buildSeletedName(beanArg1);
                     beanArg1.setSelected(true);
                     beanArg1.setSelectedName(seletedName1);
@@ -1214,6 +1230,11 @@ public class SearchGoodActivity extends AppCompatActivity {
                     @Override
                     public void onError(@NonNull Throwable e) {
                         Log.d(TAG, e.toString());
+                        if (e instanceof JsonSyntaxException) {
+                            full.setVisibility(View.GONE);
+                            cast.setText("小计   " + getString(R.string.server_settle_moeny) + "0");
+                            cut.setText("优惠   " + getString(R.string.server_settle_moeny) + "0");
+                        }
 
                     }
 
@@ -1332,7 +1353,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                     }
                 });
 
-        Observable<SearchFilterParam> E = Observable.just(pricedefMin,pricedefMax)
+        Observable<SearchFilterParam> E = Observable.just(pricedefMin, pricedefMax)
                 .map(new Function<EditText, String>() {
                     @Override
                     public String apply(@NonNull EditText editText) throws Exception {
@@ -1345,8 +1366,8 @@ public class SearchGoodActivity extends AppCompatActivity {
                     @Override
                     public boolean test(@NonNull List<String> strings) throws Exception {
                         boolean res = false;
-                        for (String num : strings){
-                            if(num.length() > 0){
+                        for (String num : strings) {
+                            if (num.length() > 0) {
                                 res = true;
                             }
                         }
@@ -1360,19 +1381,19 @@ public class SearchGoodActivity extends AppCompatActivity {
                         filterParam.setType(FilterType.PRICE);
                         String value1 = strings.get(0);
                         String value2 = strings.get(1);
-                        if(value1.length() > 0 && value2.length() >0){
+                        if (value1.length() > 0 && value2.length() > 0) {
                             Integer intValue1 = Integer.valueOf(value1);
                             Integer intValue2 = Integer.valueOf(value2);
-                            if(intValue1 > intValue2){
+                            if (intValue1 > intValue2) {
                                 filterParam.setParam(value2);
                                 filterParam.setParam2(value1);
-                            }else{
+                            } else {
                                 filterParam.setParam(value1);
                                 filterParam.setParam2(value2);
                             }
-                        }else if(pricedefMin.getText().length() > 0 ){
+                        } else if (pricedefMin.getText().length() > 0) {
                             filterParam.setParam(pricedefMin.getText().toString());
-                        }else if(pricedefMax.getText().length() > 0){
+                        } else if (pricedefMax.getText().length() > 0) {
                             filterParam.setParam2(pricedefMax.getText().toString());
                         }
                         return filterParam;
@@ -1489,7 +1510,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                         return param;
                     }
                 });
-        Observable.concatArray(A, B, C, D,E)
+        Observable.concatArray(A, B, C, D, E)
                 .toList()
                 .toObservable()
                 .map(new Function<List<SearchFilterParam>, SearchGoodsParam>() {
@@ -1559,6 +1580,12 @@ public class SearchGoodActivity extends AppCompatActivity {
     }
 
     private void clearStatus() {
+        hasStockCb.setChecked(true);
+        selectedIcon.setVisibility(View.GONE);
+        pricedefMax.clearFocus();
+        pricedefMin.clearFocus();
+        pricedefMax.getText().clear();
+        pricedefMin.getText().clear();
         Observable<FilterBean> A = Observable.fromIterable(horizontalFilterAdapter.getData());
         Observable<FilterBean> B = Observable.fromIterable(verticalFilterAdapter.getData());
         Observable.concat(A, B)
@@ -1600,15 +1627,28 @@ public class SearchGoodActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(@NonNull Throwable e) {
-
+                        Log.d(TAG, e.toString());
                     }
 
                     @Override
                     public void onComplete() {
-                        categoryChange();
+                        boolean hasCatetory = false;
+                        for (FilterBean tmpBean : verticalFilterAdapter.getData()) {
+                            if (tmpBean.getType() == FilterType.CATEGORY) {
+                                hasCatetory = true;
+                                break;
+                            }
+                        }
+                        if (hasCatetory) {
+                            categoryChange();
+                        }
+                        if (verticalFilterAdapter.getData().size() != 0) {
+                            verticalFilterAdapter.getOnItemClickListener().onItemClick(verticalFilterAdapter, null, 0);
+                        }
                         horizontalFilterAdapter.notifyDataSetChanged();
                         verticalFilterAdapter.notifyDataSetChanged();
                         verticalFilterItemAdapter.notifyDataSetChanged();
+                        Log.d(TAG, "clear up");
                     }
                 });
     }
@@ -1949,18 +1989,20 @@ public class SearchGoodActivity extends AppCompatActivity {
                 addAllChoseItem(cateBean);
                 res.add(cateBean);
             }
-            if (searchFilterRes.getPropertyList() != null && searchFilterRes.getPropertyList().size() != 0 && searchFilterRes.getPropertyList().size() != 1) {
+            if (searchFilterRes.getPropertyList() != null && searchFilterRes.getPropertyList().size() != 0) {
                 for (PropertyListBean BiBean : searchFilterRes.getPropertyList()) {
                     FilterBean peopertyBean = new FilterBean();
                     peopertyBean.setType(FilterType.PEOPERTY);
                     peopertyBean.setName(BiBean.getName());
-                    for (String attr : BiBean.getValue()) {
-                        FilterItem item = new FilterItem();
-                        item.setName(attr);
-                        peopertyBean.addItem(item);
+                    if (BiBean.getValue().size() > 1) {
+                        for (String attr : BiBean.getValue()) {
+                            FilterItem item = new FilterItem();
+                            item.setName(attr);
+                            peopertyBean.addItem(item);
+                        }
+                        addAllChoseItem(peopertyBean);
+                        res.add(peopertyBean);
                     }
-                    addAllChoseItem(peopertyBean);
-                    res.add(peopertyBean);
                 }
             }
             return res;

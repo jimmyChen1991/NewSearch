@@ -473,7 +473,12 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 				SearchKeyWord wd = realm.createObject(SearchKeyWord.class, UUID.randomUUID().toString());
 				wd.setWord(searchWord);
 				wd.setUpdateTime(String.valueOf(System.currentTimeMillis()));
-				HistotyWords.add(word);
+				HistotyWords.clear();
+				RealmResults<SearchKeyWord> wd2 = realm.where(SearchKeyWord.class)
+						.findAllSorted("updateTime",Sort.DESCENDING);
+				for (SearchKeyWord w : wd2){
+					HistotyWords.add(w);
+				}
 			}else{
 				RealmResults<SearchKeyWord> wd = realm.where(SearchKeyWord.class)
 						.findAllSorted("updateTime",Sort.DESCENDING);
