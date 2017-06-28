@@ -16,7 +16,6 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -27,7 +26,6 @@ import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.chad.library.adapter.base.BaseQuickAdapter;
@@ -35,7 +33,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.hhyg.TyClosing.R;
 import com.hhyg.TyClosing.apiService.SearchSevice;
-import com.hhyg.TyClosing.config.Constants;
 import com.hhyg.TyClosing.di.componet.DaggerCommonNetParamComponent;
 import com.hhyg.TyClosing.di.componet.DaggerSearchGoodComponent;
 import com.hhyg.TyClosing.di.module.CommonNetParamModule;
@@ -75,6 +72,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 
 import butterknife.BindString;
 import butterknife.BindView;
@@ -119,7 +117,11 @@ public class SearchGoodActivity extends AppCompatActivity {
     @Inject
     SearchGoodsParam param_raw;
     @Inject
+    @Named("slowSevice")
     SearchSevice searchSevice;
+    @Inject
+    @Named("fastSevice")
+    SearchSevice fastSearchSevice;
     @Inject
     GoodRecAdapter goodRecAdapter;
     @Inject
@@ -205,6 +207,7 @@ public class SearchGoodActivity extends AppCompatActivity {
     View wrap;
     private SearchFilterRes rawFilterRes;
     private PeopertyPopwindow popWindow;
+    private View retryView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -454,6 +457,14 @@ public class SearchGoodActivity extends AppCompatActivity {
 
     private void initView() {
         initSearchType();
+        retryView =  LayoutInflater.from(this).inflate(R.layout.layout_retry, null, false);
+        Button retry = (Button) retryView.findViewById(R.id.retry);
+        retry.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                changeSearchGoods();
+            }
+        });
         chosengerenal.setClickable(false);
         searchtitle.setText(getIntent().getStringExtra(getString(R.string.search_content)));
         goodsWrap.setLayoutManager(new GridLayoutManager(this, 3, GridLayoutManager.VERTICAL, false));
@@ -1006,6 +1017,12 @@ public class SearchGoodActivity extends AppCompatActivity {
                             break;
                         }
                     }
+                    for (FilterItem item : beanArg2.getDataSet()){
+                        if (item.isSelected()) {
+                            item.setSelected(false);
+                            break;
+                        }
+                    }
                     itemArg1.setSelected(true);
                     itemArg2.setSelected(true);
                     String seletedName1 = buildSeletedName(beanArg1);
@@ -1117,12 +1134,12 @@ public class SearchGoodActivity extends AppCompatActivity {
     }
 
     private void printStatus() {
-        for (FilterBean bean : verticalFilterAdapter.getData()) {
-            Log.d(TAG, "x" + bean.isSelected());
-            for (FilterItem item : bean.getDataSet()) {
-                Log.d(TAG, "c" + item.isSelected());
-            }
-        }
+//        for (FilterBean bean : verticalFilterAdapter.getData()) {
+//            Log.d(TAG, "x" + bean.isSelected());
+//            for (FilterItem item : bean.getDataSet()) {
+//                Log.d(TAG, "c" + item.isSelected());
+//            }
+//        }
     }
 
     private void categoryChange(FilterItem item) {
@@ -1145,7 +1162,7 @@ public class SearchGoodActivity extends AppCompatActivity {
             choseCnt = ShoppingCartMgr.getInstance().getInfoByBarCode(bean.getBarcode()).cnt + 1;
         }
         if (choseCnt > bean.getStock()) {
-            Toast.makeText(MyApplication.GetInstance(), "该商品库存不足", Toast.LENGTH_SHORT).show();
+            Toasty.error(SearchGoodActivity.this,"该商品库存不足").show();
             return;
         }
         if (bean.getStock() > 0) {
@@ -1158,11 +1175,11 @@ public class SearchGoodActivity extends AppCompatActivity {
             spu.attrInfo = bean.getName();
             spu.msPrice = bean.getMianshui_price();
             if (bean.getImage() != null && !bean.getImage().equals("")) {
-                ArrayList<String> imgLinks = new ArrayList<String>();
+                ArrayList<String> imgLinks = new ArrayList<>();
                 imgLinks.add(bean.getImage());
                 spu.imageLinks = imgLinks;
             }
-            ShoppingCartMgr mShoppingCartMgr = ShoppingCartMgr.getInstance();
+            ShoppingCartMgr mShoppingCartMgr =  ShoppingCartMgr.getInstance();
             if (mShoppingCartMgr.isInfoExist(bean.getBarcode())) {
                 mShoppingCartMgr.updateShopCnt(bean.getBarcode(), choseCnt);
             } else {
@@ -1177,7 +1194,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                     mShoppingCartMgr.updateActiveId(bean.getBarcode(), "");
                 }
             }
-            Toast.makeText(MyApplication.GetInstance(), "加入购物车成功", Toast.LENGTH_SHORT).show();
+            Toasty.success(SearchGoodActivity.this,"加入购物车成功").show();
             if (!(searchType == SearchType.PRIVILEGE)) {
                 getCaset();
             }
@@ -1549,7 +1566,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .flatMap(new Function<SearchGoodsParam, ObservableSource<SearchGoods>>() {
                     @Override
                     public ObservableSource<SearchGoods> apply(@NonNull SearchGoodsParam searchGoodsParam) throws Exception {
-                        return searchSevice.searchGoodsApi(gson.toJson(searchGoodsParam));
+                        return fastSearchSevice.searchGoodsApi(gson.toJson(searchGoodsParam));
                     }
                 })
                 .subscribeOn(Schedulers.io())
@@ -1563,6 +1580,8 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .subscribe(new Observer<SearchGoods>() {
                     @Override
                     public void onSubscribe(@NonNull Disposable d) {
+                        goodRecAdapter.getData().clear();
+                        goodRecAdapter.notifyDataSetChanged();
                         dialog.show();
                     }
 
@@ -1573,11 +1592,12 @@ public class SearchGoodActivity extends AppCompatActivity {
                         if (searchGoods.getData().getGoodsList().size() == 0) {
                             goodRecAdapter.setEmptyView(R.layout.empty_view);
                         }
-
                     }
 
                     @Override
                     public void onError(@NonNull Throwable e) {
+                        Log.d(TAG, e.toString());
+                        goodRecAdapter.setEmptyView(retryView);
                         printErr(e);
                     }
 
@@ -1814,7 +1834,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .flatMap(new Function<SearchGoodsParam, ObservableSource<SearchGoods>>() {
                     @Override
                     public ObservableSource<SearchGoods> apply(@NonNull SearchGoodsParam bean) throws Exception {
-                        return searchSevice.searchGoodsApi(gson.toJson(bean));
+                        return fastSearchSevice.searchGoodsApi(gson.toJson(bean));
                     }
                 })
                 .subscribeOn(Schedulers.io())
@@ -2059,9 +2079,9 @@ public class SearchGoodActivity extends AppCompatActivity {
     }
 
     private void printErr(@NonNull Throwable e) {
-        for (int index = 0; index < e.getStackTrace().length; index++) {
-            Log.d(TAG, e.getStackTrace()[index].toString());
-        }
+//        for (int index = 0; index < e.getStackTrace().length; index++) {
+//            Log.d(TAG, e.getStackTrace()[index].toString());
+//        }
     }
 
 }

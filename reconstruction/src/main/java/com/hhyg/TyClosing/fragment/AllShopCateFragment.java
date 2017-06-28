@@ -86,7 +86,13 @@ public class AllShopCateFragment extends AllShopBaseFragment implements View.OnC
 	private void jumpToSearchActivity(CategoryInfo item) {
 		Intent it = new Intent();
 		SearchGoodsParam.DataBean bean = new SearchGoodsParam.DataBean();
-		bean.setClass1Id(item.id);
+		if(item.level == 1){
+			bean.setClass1Id(item.id);
+		}else if(item.level ==2){
+			bean.setClass2Id(item.id);
+		}else if(item.level == 3){
+			bean.setClass3Id(item.id);
+		}
 		it.putExtra(getResources().getString(R.string.search_token),bean);
 		it.putExtra(getString(R.string.search_content),item.cateName);
 		it.putExtra(getString(R.string.search_type), SearchType.CATE.ordinal());

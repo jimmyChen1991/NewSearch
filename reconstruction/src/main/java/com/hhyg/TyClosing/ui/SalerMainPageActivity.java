@@ -406,7 +406,9 @@ public class SalerMainPageActivity extends Activity implements android.text.Text
 
     protected void onResume() {
         super.onResume();
-        mIsprivilegeUserPresenter.isPrivilegeUser();
+        if(ClosingRefInfoMgr.getInstance().getLoginConfig().isPrivilege_active()){
+            mIsprivilegeUserPresenter.isPrivilegeUser();
+        }
         MobclickAgent.onResume(this);
         MobclickAgent.onPageStart("SalerMainPageActivity on onPause");
     }

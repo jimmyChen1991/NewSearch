@@ -90,7 +90,9 @@ public class AllShopActivity extends Activity implements OnClickListener,IsPrivi
 	@Override
 	protected void onResume() {
 		super.onResume();
-		mIsprivilegeUserPresenter.isPrivilegeUser();
+		if(ClosingRefInfoMgr.getInstance().getLoginConfig().isPrivilege_active()){
+			mIsprivilegeUserPresenter.isPrivilegeUser();
+		}
 		InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 		imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0); //强制隐藏键盘
 		fetchLastedAllshopDataOnRefresh();

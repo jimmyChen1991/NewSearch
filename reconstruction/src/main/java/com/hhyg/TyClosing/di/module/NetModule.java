@@ -29,14 +29,21 @@ public class NetModule {
     @Provides
     @Singleton
     @Named("serviceApi")
-    Retrofit provideRetrofit(Converter.Factory convertFtry, CallAdapter.Factory adapterFtry,OkHttpClient client,@Named("serviceUrl") String url){
+    Retrofit provideRetrofit(Converter.Factory convertFtry, CallAdapter.Factory adapterFtry,@Named("slowClient") OkHttpClient client,@Named("serviceUrl") String url){
         return new Retrofit.Builder().baseUrl(url).client(client).addConverterFactory(convertFtry).addCallAdapterFactory(adapterFtry).build();
     }
 
     @Provides
     @Singleton
-    @Named("indexApi")
-    Retrofit provideRetrofit_IndexApi(Converter.Factory convertFtry, CallAdapter.Factory adapterFtry,OkHttpClient client,@Named("indexUrl") String url){
+    @Named("slowIndexApi")
+    Retrofit provideRetrofit_IndexApi(Converter.Factory convertFtry, CallAdapter.Factory adapterFtry,@Named("slowClient") OkHttpClient client,@Named("indexUrl") String url){
+        return new Retrofit.Builder().baseUrl(url).client(client).addConverterFactory(convertFtry).addCallAdapterFactory(adapterFtry).build();
+    }
+
+    @Provides
+    @Singleton
+    @Named("fastIndexApi")
+    Retrofit fastRetrofit(Converter.Factory convertFtry, CallAdapter.Factory adapterFtry,@Named("fastClient") OkHttpClient client,@Named("indexUrl") String url){
         return new Retrofit.Builder().baseUrl(url).client(client).addConverterFactory(convertFtry).addCallAdapterFactory(adapterFtry).build();
     }
 
@@ -63,10 +70,16 @@ public class NetModule {
     }
 
     @Provides
+    @Named("slowClient")
     OkHttpClient provideOkClient(HttpLoggingInterceptor interceptor){
         return new OkHttpClient.Builder().addInterceptor(interceptor).connectTimeout(50000, TimeUnit.MILLISECONDS).readTimeout(50000,TimeUnit.MILLISECONDS).build();
     }
 
+    @Provides
+    @Named("fastClient")
+    OkHttpClient fastClient(HttpLoggingInterceptor interceptor){
+        return new OkHttpClient.Builder().addInterceptor(interceptor).connectTimeout(5000, TimeUnit.MILLISECONDS).readTimeout(5000,TimeUnit.MILLISECONDS).build();
+    }
     @Provides
     HttpLoggingInterceptor provideLogginInterceptor(HttpLoggingInterceptor.Logger l){
         HttpLoggingInterceptor interceptor =  new HttpLoggingInterceptor(l);

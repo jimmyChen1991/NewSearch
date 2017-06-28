@@ -182,12 +182,13 @@
             android:maxEms="15"
             android:singleLine="true"
             android:textSize="15sp" />
-        <Button 
+        <TextView
             android:id="@+id/aty_mod"
             android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_alignParentRight="true"
 			android:layout_marginRight="30dip"
+            android:gravity="center"
 			android:background="#ffffff"
 			android:text="修改"
 			android:textColor="#C38C56"            

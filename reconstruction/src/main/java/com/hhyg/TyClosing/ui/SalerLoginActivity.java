@@ -1,16 +1,35 @@
 package com.hhyg.TyClosing.ui;
-import java.io.IOException;
-import java.lang.ref.WeakReference;
+
+import android.app.Dialog;
+import android.content.Context;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.hhyg.TyClosing.R;
 import com.hhyg.TyClosing.allShop.handler.SimpleHandler;
+import com.hhyg.TyClosing.apiService.LoginConfigService;
 import com.hhyg.TyClosing.config.Constants;
 import com.hhyg.TyClosing.dao.InitInfoDao;
 import com.hhyg.TyClosing.dao.PickUpInfoDao;
 import com.hhyg.TyClosing.dao.SalerInfoDao;
+import com.hhyg.TyClosing.di.componet.DaggerCommonNetParamComponent;
+import com.hhyg.TyClosing.di.componet.DaggerLoginConfigComponent;
+import com.hhyg.TyClosing.di.module.CommonNetParamModule;
+import com.hhyg.TyClosing.entities.loginconfig.LoginConfig;
+import com.hhyg.TyClosing.entities.loginconfig.LoginConfigParam;
+import com.hhyg.TyClosing.entities.loginconfig.LoginConfigRes;
+import com.hhyg.TyClosing.exceptions.ServiceDataException;
 import com.hhyg.TyClosing.global.DbOpenHelper;
 import com.hhyg.TyClosing.global.FileOperator;
 import com.hhyg.TyClosing.global.MyApplication;
@@ -18,33 +37,49 @@ import com.hhyg.TyClosing.global.NetCallBackHandlerException;
 import com.hhyg.TyClosing.global.ProcMsgHelper;
 import com.hhyg.TyClosing.info.PickUpInfo;
 import com.hhyg.TyClosing.info.SalerInfo;
-import com.hhyg.TyClosing.mgr.*;
+import com.hhyg.TyClosing.mgr.ClosingRefInfoMgr;
+import com.hhyg.TyClosing.mgr.ServerLogMgr;
+import com.hhyg.TyClosing.mgr.VersionMgr;
 import com.hhyg.TyClosing.ui.base.BaseActivity;
 import com.hhyg.TyClosing.ui.view.AutoClearEditText;
 import com.hhyg.TyClosing.ui.view.AutoClearEditText.OnCommitBtnListener;
 import com.hhyg.TyClosing.util.ProgressDialogUtil;
-
-import android.app.Dialog;
-import android.content.Context;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
-import android.widget.Toast;
 import com.umeng.analytics.MobclickAgent;
+
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+
+import javax.inject.Inject;
+
+
+import es.dmoral.toasty.Toasty;
+import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 
 import static com.hhyg.TyClosing.config.Constants.IS_DEBUG_MODE;
 
 public class SalerLoginActivity extends BaseActivity{
 	private MyApplication mApp = MyApplication.GetInstance();
+	private ClosingRefInfoMgr mClosingRefInfoMgr = ClosingRefInfoMgr.getInstance();
 	private DbOpenHelper mDb = DbOpenHelper.GetInstance();
 	private AutoClearEditText mSalerNameInputEdit;
 	private AutoClearEditText mSalerPwdInputEdit;
 	private Button mCommitBtn;
 	private ProgressView mProgressView;
 	private UiHandler mUiHandler;
+	@Inject
+	LoginConfigService configService;
+	@Inject
+	LoginConfigParam configParam;
+	@Inject
+	Gson gson;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -56,6 +91,11 @@ public class SalerLoginActivity extends BaseActivity{
 		initView();
 		setEditInputLengthListener();
 		ServerLogMgr.getInstance();
+		DaggerLoginConfigComponent.builder()
+				.applicationComponent(mApp.getComponent())
+				.commonNetParamComponent(DaggerCommonNetParamComponent.builder().commonNetParamModule(new CommonNetParamModule()).build())
+				.build()
+				.inject(this);
 		if(IS_DEBUG_MODE)
 			MobclickAgent.setDebugMode(true);
 		//Logger.GetInstance().Track("SalerLoginActivity on Create");
@@ -186,7 +226,81 @@ public class SalerLoginActivity extends BaseActivity{
 		jsonParam.put("data", dataParam);
 		return jsonParam.toString();
 	}
-	
+
+	public void fetchConfigRes() {
+		configParam.setChannel(mClosingRefInfoMgr.getChannelId());
+		configParam.setShopid(mClosingRefInfoMgr.getShopId());
+		configParam.setSaler_id(mClosingRefInfoMgr.getSalerId());
+		Observable.just(configParam)
+				.map(new Function<LoginConfigParam, String>() {
+					@Override
+					public String apply(@NonNull LoginConfigParam loginConfigParam) throws Exception {
+						return gson.toJson(loginConfigParam);
+					}
+				})
+				.flatMap(new Function<String, ObservableSource<LoginConfigRes>>() {
+					@Override
+					public ObservableSource<LoginConfigRes> apply(@NonNull String s) throws Exception {
+						return configService.getLoginConfig(s);
+					}
+				})
+				.map(new Function<LoginConfigRes, LoginConfig>() {
+					@Override
+					public LoginConfig apply(@NonNull LoginConfigRes loginConfigRes) throws Exception {
+						LoginConfig config = new LoginConfig();
+						if(loginConfigRes.getData().getPrivilege_active().length() == 0 || loginConfigRes.getData().getCard_active().length() ==0){
+							throw new ServiceDataException();
+						}
+						if(loginConfigRes.getData().getCard_active().equals("1")){
+							config.setCard_active(true);
+						}else {
+							config.setCard_active(false);
+						}
+						if(loginConfigRes.getData().getPrivilege_active().equals("1")){
+							config.setPrivilege_active(true);
+						}else{
+							config.setPrivilege_active(false);
+						}
+						return config;
+					}
+				})
+				.subscribeOn(Schedulers.io())
+				.observeOn(AndroidSchedulers.mainThread())
+				.doFinally(new Action() {
+					@Override
+					public void run() throws Exception {
+						disProgressView();
+					}
+				})
+				.subscribe(new Observer<LoginConfig>() {
+					@Override
+					public void onSubscribe(@NonNull Disposable d) {
+
+					}
+
+					@Override
+					public void onNext(@NonNull LoginConfig loginConfig) {
+						mClosingRefInfoMgr.setLoginConfig(loginConfig);
+						Toasty.success(SalerLoginActivity.this,getString(R.string.login_success)).show();
+						jumpToAllShopActivity();
+					}
+
+					@Override
+					public void onError(@NonNull Throwable e) {
+						if(e instanceof JsonSyntaxException || e instanceof ServiceDataException){
+							Toasty.error(SalerLoginActivity.this,getString(R.string.server_exception)).show();
+						}
+						Log.d("SalerLoginActivity", e.toString());
+					}
+
+					@Override
+					public void onComplete() {
+
+					}
+				});
+
+	}
+
 	private void jumpToAllShopActivity() {
 		openActivityWithEnding(AllShopActivity.class);
 	}
@@ -230,7 +344,8 @@ public class SalerLoginActivity extends BaseActivity{
             handlerInitInfo(jsonObj);
             handlerPickInfo(jsonObj);
             handlerSalerInfo(jsonObj);
-            handler.sendEmptyMessage(6);//数据解析完成回调
+			handler.sendEmptyMessage(5);
+//            handler.sendEmptyMessage(6);//数据解析完成回调
 		}
 		private void handlerInitInfo(JSONObject jsonObj) throws JSONException{
 				JSONObject data = jsonObj.getJSONObject("data");
@@ -283,11 +398,14 @@ public class SalerLoginActivity extends BaseActivity{
 		}
 		@Override
 		public void handleMessage(Message msg) {
-			disProgressView();
 			super.handleMessage(msg);
 			switch(msg.what){
 				case 4:{
-					Toast.makeText(MyApplication.GetInstance(), (String) msg.obj, Toast.LENGTH_SHORT).show();
+					Toasty.error(MyApplication.GetInstance(),(String) msg.obj).show();
+					break;
+				}
+				case 5:{
+					fetchConfigRes();
 					break;
 				}
 				case 6:{
@@ -297,6 +415,14 @@ public class SalerLoginActivity extends BaseActivity{
 				}
 			}
 		}
+
+		private void fetchConfigRes() {
+			SalerLoginActivity loginAty = mSalerLoginActivity.get();
+			if(loginAty != null){
+				loginAty.fetchConfigRes();
+			}
+		}
+
 		private void disProgressView(){
 			SalerLoginActivity loginAty = mSalerLoginActivity.get();
 			if(loginAty != null){

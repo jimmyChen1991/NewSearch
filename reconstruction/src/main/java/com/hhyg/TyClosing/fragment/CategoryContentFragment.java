@@ -45,13 +45,7 @@ public class CategoryContentFragment extends Fragment{
 	public void showCateInfo(CateInfo fristInfo){
 		firstLevelCateInfo = fristInfo;
 		mCategoryListAdapter.notifyDataSetChanged();
-		mHeadView.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				jumpToSearchGoodListActivity(firstLevelCateInfo);
-			}
-		});
-		ImageAware imageAware = new ImageViewAware(mHeadView, false); 
+		ImageAware imageAware = new ImageViewAware(mHeadView, false);
 		ImageLoader.getInstance().displayImage(firstLevelCateInfo.netUri, imageAware);
 	}
 	private void findView(View root) {

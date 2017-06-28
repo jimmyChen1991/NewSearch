@@ -12,7 +12,6 @@ import com.hhyg.TyClosing.entities.search.FilterChangedRaw;
 import com.hhyg.TyClosing.entities.search.PeopertyOfCate;
 import com.hhyg.TyClosing.entities.search.SearchFilterRes;
 import com.hhyg.TyClosing.entities.shopcart.ShopcartListParam;
-import com.hhyg.TyClosing.global.MyApplication;
 import com.hhyg.TyClosing.mgr.ClosingRefInfoMgr;
 import com.hhyg.TyClosing.ui.SearchGoodActivity;
 import com.hhyg.TyClosing.ui.adapter.search.GoodRecAdapter;
@@ -86,7 +85,14 @@ public class SearchGoodsModule {
     }
 
     @Provides
-    SearchSevice provideService(@Named("indexApi") Retrofit retrofit){
+    @Named("slowSevice")
+    SearchSevice provideSlowService(@Named("slowIndexApi") Retrofit retrofit){
+        return  retrofit.create(SearchSevice.class);
+    }
+
+    @Provides
+    @Named("fastSevice")
+    SearchSevice provideFastService(@Named("fastIndexApi") Retrofit retrofit){
         return  retrofit.create(SearchSevice.class);
     }
 
@@ -111,7 +117,7 @@ public class SearchGoodsModule {
     @Provides
     MaterialDialog provideDialog(){
         return new MaterialDialog.Builder(context)
-                .theme(Theme.DARK)
+                .theme(Theme.LIGHT)
                 .iconRes(R.drawable.hhyglogo)
                 .content("拼命加载中...")
                 .title("请稍后")

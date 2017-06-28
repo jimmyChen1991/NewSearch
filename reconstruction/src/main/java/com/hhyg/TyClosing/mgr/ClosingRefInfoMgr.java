@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import com.hhyg.TyClosing.dao.InitInfoDao;
 import com.hhyg.TyClosing.dao.PickUpInfoDao;
 import com.hhyg.TyClosing.dao.SalerInfoDao;
+import com.hhyg.TyClosing.entities.loginconfig.LoginConfig;
 import com.hhyg.TyClosing.global.MyApplication;
 import com.hhyg.TyClosing.info.PickUpInfo;
 import com.hhyg.TyClosing.info.SalerInfo;
@@ -26,6 +27,7 @@ public class ClosingRefInfoMgr {
     private SalerInfo mSalerInfo;
     
     private Integer chosenPickupInfoIndex;
+    private LoginConfig loginConfig;
     
     public void setAndSaveChosenPickupInfoIndex(int chosenPickupInfoIndex) {
 		this.chosenPickupInfoIndex = chosenPickupInfoIndex;
@@ -160,6 +162,14 @@ public class ClosingRefInfoMgr {
 	public boolean isShopTypeOutside(){
 		return getSalerInfo().isShopTypeOutside();
 	}
+
+    public LoginConfig getLoginConfig() {
+        return loginConfig;
+    }
+
+    public void setLoginConfig(LoginConfig loginConfig) {
+        this.loginConfig = loginConfig;
+    }
 }
 
 	

@@ -18,7 +18,7 @@ import retrofit2.Retrofit;
 public class AssociateModule {
 
     @Provides
-    AssociateSevice provideService(@Named("indexApi") Retrofit retrofit){
+    AssociateSevice provideService(@Named("slowIndexApi") Retrofit retrofit){
         return retrofit.create(AssociateSevice.class);
     }
 

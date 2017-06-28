@@ -182,7 +182,7 @@ public class ShopCartAdapter extends BaseAdapter{
 			ViewGroup img_wrap;
 			ViewGroup name_warp;
 			TextView  aty_desc;
-			Button    aty_mod;
+			TextView    aty_mod;
 			ImageView image;
 			ImageView youshuiIcon;
 			ImageButton addCount;
@@ -221,7 +221,7 @@ public class ShopCartAdapter extends BaseAdapter{
 				convertView = mLayoutInflater.inflate(R.layout.shopcartlist_item, null);
 				viewHolder.aty_wrap = (ViewGroup) convertView.findViewById(R.id.activeinfoswrap);
 				viewHolder.aty_desc = (TextView) convertView.findViewById(R.id.aty_desc);
-				viewHolder.aty_mod = (Button) convertView.findViewById(R.id.aty_mod);
+				viewHolder.aty_mod = (TextView) convertView.findViewById(R.id.aty_mod);
 				viewHolder.image = (ImageView) convertView.findViewById(R.id.img);
 				viewHolder.youshuiIcon = (ImageView) convertView.findViewById(R.id.youshui);
 				viewHolder.delect = (ImageButton) convertView.findViewById(R.id.x_img);

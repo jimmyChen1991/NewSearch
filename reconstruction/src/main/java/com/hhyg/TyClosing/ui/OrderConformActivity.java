@@ -11,6 +11,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.AbsoluteSizeSpan;
+import android.util.Log;
 import android.view.*;
 import android.widget.*;
 import com.alibaba.fastjson.JSONArray;
@@ -52,7 +53,6 @@ public class OrderConformActivity extends Activity {
     private JSONObject obInfo = null;
     private JSONArray obGoods = null;
     private JSONObject ob = null;
-
     private String isTax = "0";//0 无税，1 有税
     private String taxFormula;//商品税公式
     private PickUpInfo mInfoPickUp = null;//用户选择额的提货机场
@@ -78,6 +78,7 @@ public class OrderConformActivity extends Activity {
     private buyCallback mbuyCallBack = new buyCallback();
     private Dialog mDialog = null;
 
+    private View cardWrap;
     private EditText mTicketEdit;
     private EditText mCardNumberEdit;
     private EditText mCarPasswordEdit;
@@ -95,6 +96,13 @@ public class OrderConformActivity extends Activity {
 
 
     public void findView() {
+        cardWrap = findViewById(R.id.toolbar8);
+        Log.d("OrderConformActivity", "cart active" + mClosingRefInfoMgr.getLoginConfig().isCard_active());
+        if(mClosingRefInfoMgr.getLoginConfig().isCard_active()){
+            cardWrap.setVisibility(View.VISIBLE);
+        }else {
+            cardWrap.setVisibility(View.GONE);
+        }
         mTicketEdit = (EditText) findViewById(R.id.username_code_number);
         mCardNumberEdit = (EditText) findViewById(R.id.username_card_number);
         mCarPasswordEdit = (EditText) findViewById(R.id.username_card_password);

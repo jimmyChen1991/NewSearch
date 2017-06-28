@@ -18,6 +18,8 @@ public interface ApplicationComponent {
     void inject(MyApplication app);
     @Named("serviceApi")
     Retrofit getRetrofit();
-    @Named("indexApi")
+    @Named("slowIndexApi")
     Retrofit getRetrofit2();
+    @Named("fastIndexApi")
+    Retrofit getRetrofit3();
 }
