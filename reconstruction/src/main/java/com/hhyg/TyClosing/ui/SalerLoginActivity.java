@@ -93,7 +93,6 @@ public class SalerLoginActivity extends BaseActivity{
 		ServerLogMgr.getInstance();
 		DaggerLoginConfigComponent.builder()
 				.applicationComponent(mApp.getComponent())
-				.commonNetParamComponent(DaggerCommonNetParamComponent.builder().commonNetParamModule(new CommonNetParamModule()).build())
 				.build()
 				.inject(this);
 		if(IS_DEBUG_MODE)

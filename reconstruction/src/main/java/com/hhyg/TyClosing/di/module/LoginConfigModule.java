@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.hhyg.TyClosing.apiService.LoginConfigService;
 import com.hhyg.TyClosing.entities.CommonParam;
 import com.hhyg.TyClosing.entities.loginconfig.LoginConfigParam;
+import com.hhyg.TyClosing.global.MyApplication;
 
 import javax.inject.Named;
 
@@ -23,9 +24,9 @@ public class LoginConfigModule {
     }
 
     @Provides
-    LoginConfigParam provideConfigParam(CommonParam commonParam){
+    LoginConfigParam provideConfigParam(){
         LoginConfigParam param = new LoginConfigParam();
-        param.setImei(commonParam.getImei());
+        param.setImei(MyApplication.GetInstance().getAndroidId());
         return param;
     }
 

@@ -10,7 +10,7 @@ import dagger.Component;
  * Created by user on 2017/6/27.
  */
 @PerActivity
-@Component(dependencies = {CommonNetParamComponent.class,ApplicationComponent.class},modules = LoginConfigModule.class)
+@Component(dependencies = {ApplicationComponent.class},modules = LoginConfigModule.class)
 public interface LoginConfigComponent {
     void inject(SalerLoginActivity aty);
 }

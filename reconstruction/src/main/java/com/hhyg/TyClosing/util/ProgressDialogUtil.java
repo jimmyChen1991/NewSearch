@@ -70,15 +70,15 @@ public class ProgressDialogUtil {
     public static Dialog show(Context context, String message,
                               boolean isCanceled) {
         LayoutInflater inflater = LayoutInflater.from(context);
-        View v = inflater.inflate(R.layout.loading_dialog, null);
+        View v = inflater.inflate(R.layout.dialog_loading, null);
 
-        TextView msg = (TextView) v.findViewById(R.id.msg);
-        msg.setText(message);
-
-        ImageView imageView = (ImageView) v.findViewById(R.id.loading);
-        imageView.setBackgroundResource(R.drawable.load_animation);
-        AnimationDrawable anim = (AnimationDrawable) imageView.getBackground();
-        anim.start();
+//        TextView msg = (TextView) v.findViewById(R.id.msg);
+//        msg.setText(message);
+//
+//        ImageView imageView = (ImageView) v.findViewById(R.id.loading);
+//        imageView.setBackgroundResource(R.drawable.load_animation);
+//        AnimationDrawable anim = (AnimationDrawable) imageView.getBackground();
+//        anim.start();
         // 创建自定义样式dialog
         Dialog loadingDialog = new Dialog(context, R.style.LoadingDialogTheme);
         // 是否可以用“返回键”取消

@@ -27,7 +27,7 @@ public class ClosingRefInfoMgr {
     private SalerInfo mSalerInfo;
     
     private Integer chosenPickupInfoIndex;
-    private LoginConfig loginConfig;
+    private LoginConfig loginConfig = new LoginConfig();
     
     public void setAndSaveChosenPickupInfoIndex(int chosenPickupInfoIndex) {
 		this.chosenPickupInfoIndex = chosenPickupInfoIndex;

@@ -153,15 +153,6 @@
 		android:src="@drawable/progress"
 		android:visibility="gone"
 		android:scaleType="center"/>
-	<ImageButton
-		android:id="@+id/bindspecialcode"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:layout_above="@+id/bottom"
-		android:layout_marginBottom="70dip"
-		android:layout_alignParentRight="true"
-		android:visibility="gone"
-		android:layout_marginRight="20dip"    />
 	<include
 		android:id="@+id/bottom"
 		layout="@layout/tab_bottom"/>
