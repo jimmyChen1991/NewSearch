@@ -27,7 +27,7 @@ public class ActiveSellListener implements OnClickListener{
 		it.putExtra(v.getContext().getString(R.string.search_token),bean);
 		it.putExtra(v.getContext().getString(R.string.search_type), SearchType.ACTIVITY.ordinal());
 		it.putExtra(v.getContext().getString(R.string.search_desc),aInfo.getShort_desc());
-		it.putExtra(v.getContext().getString(R.string.search_content),aInfo.getType_name());
+		it.putExtra(v.getContext().getString(R.string.search_content),v.getContext().getString(R.string.discountActivity));
 		it.setClass(v.getContext(), SearchGoodActivity.class);
 		v.getContext().startActivity(it);
 	}

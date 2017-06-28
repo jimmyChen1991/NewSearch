@@ -12,6 +12,7 @@ import com.hhyg.TyClosing.entities.search.FilterChangedRaw;
 import com.hhyg.TyClosing.entities.search.PeopertyOfCate;
 import com.hhyg.TyClosing.entities.search.SearchFilterRes;
 import com.hhyg.TyClosing.entities.shopcart.ShopcartListParam;
+import com.hhyg.TyClosing.fragment.LoadingDialogFragment;
 import com.hhyg.TyClosing.mgr.ClosingRefInfoMgr;
 import com.hhyg.TyClosing.ui.SearchGoodActivity;
 import com.hhyg.TyClosing.ui.adapter.search.GoodRecAdapter;
@@ -43,6 +44,18 @@ public class SearchGoodsModule {
     public SearchGoodsModule(SearchGoodsParam.DataBean beanParam,Activity c) {
         this.beanParam = beanParam;
         context = c ;
+    }
+
+    @Provides
+    @Named("action")
+    String provideAction(SearchType type){
+        String res;
+        if(type == SearchType.ACTIVITY || type == SearchType.PRIVILEGE){
+            res = "essearch/activegoods";
+        }else{
+            res = "essearch/searchgoods";
+        }
+        return res;
     }
 
     @Provides
@@ -115,14 +128,8 @@ public class SearchGoodsModule {
     }
 
     @Provides
-    MaterialDialog provideDialog(){
-        return new MaterialDialog.Builder(context)
-                .theme(Theme.LIGHT)
-                .iconRes(R.drawable.hhyglogo)
-                .content("拼命加载中...")
-                .title("请稍后")
-                .canceledOnTouchOutside(false)
-                .build();
+    LoadingDialogFragment provideDialog(){
+        return new LoadingDialogFragment();
     }
 
     @Provides

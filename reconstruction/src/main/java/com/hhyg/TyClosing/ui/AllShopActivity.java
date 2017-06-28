@@ -47,6 +47,9 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import in.srain.cube.views.ptr.PtrClassicFrameLayout;
+
 public class AllShopActivity extends Activity implements OnClickListener,IsPrivilegeUserView{
 	private ArrayList<AllShopBaseFragment> mFragList;
 	private AllshopPresenter mAllshopPresenter;
@@ -125,7 +128,6 @@ public class AllShopActivity extends Activity implements OnClickListener,IsPrivi
 	}
 
 	private void stopSpecialFragAutoMsgSend(){
-		((AllShopSpecialFragment) mFragList.get(0)).stopAutoMsgSend();
 	}
 
 	private void findView(){
@@ -222,7 +224,6 @@ public class AllShopActivity extends Activity implements OnClickListener,IsPrivi
 		 dialog.getWindow().setContentView(layout);
 		 dialog.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
 		 dialog.getWindow().setLayout(880, RelativeLayout.LayoutParams.WRAP_CONTENT);
-		 dialog.setCancelable(false);
 		 TextView exitContent=(TextView)layout.findViewById(R.id.warnning_content);
          exitContent.setText("确认退出账号  "+ClosingRefInfoMgr.getInstance().getSalerInfo().getUserName()+"  " +ClosingRefInfoMgr.getInstance().getSalerInfo().getSalerName()+"?");
          Button exitBtn = (Button) layout.findViewById(R.id.summit_btn);

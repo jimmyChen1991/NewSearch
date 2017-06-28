@@ -27,7 +27,6 @@ import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.afollestad.materialdialogs.MaterialDialog;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -55,6 +54,7 @@ import com.hhyg.TyClosing.entities.shopcart.ShopcartListParam;
 import com.hhyg.TyClosing.entities.shopcart.ShopcartListRes;
 import com.hhyg.TyClosing.exceptions.ServiceDataException;
 import com.hhyg.TyClosing.exceptions.ServiceMsgException;
+import com.hhyg.TyClosing.fragment.LoadingDialogFragment;
 import com.hhyg.TyClosing.global.MyApplication;
 import com.hhyg.TyClosing.info.ShoppingCartInfo;
 import com.hhyg.TyClosing.info.SpuInfo;
@@ -135,7 +135,7 @@ public class SearchGoodActivity extends AppCompatActivity {
     @Inject
     Gson gson;
     @Inject
-    MaterialDialog dialog;
+    LoadingDialogFragment dialog;
     @Inject
     SearchType searchType;
     @Inject
@@ -148,6 +148,9 @@ public class SearchGoodActivity extends AppCompatActivity {
     FilterHelper filterHelper;
     @Inject
     FilterChangedRaw changedRaw;
+    @Inject
+    @Named("action")
+    String action;
     @BindView(R.id.chosehotsale)
     ImageButton chosehotsale;
     @BindView(R.id.chosenew)
@@ -224,7 +227,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .flatMap(new Function<SearchGoodsParam, ObservableSource<SearchGoods>>() {
                     @Override
                     public ObservableSource<SearchGoods> apply(@NonNull SearchGoodsParam searchGoodsParam) throws Exception {
-                        return searchSevice.searchGoodsApi(gson.toJson(searchGoodsParam));
+                        return searchSevice.searchGoodsApi(action,gson.toJson(searchGoodsParam));
                     }
                 })
                 .subscribeOn(Schedulers.io())
@@ -237,6 +240,14 @@ public class SearchGoodActivity extends AppCompatActivity {
                             goodRecAdapter.setEmptyView(R.layout.empty_view);
                         } else {
                             goodRecAdapter.addData(searchGoods.getData().getGoodsList());
+                        }
+                    }
+                })
+                .doOnNext(new Consumer<SearchGoods>() {
+                    @Override
+                    public void accept(@NonNull SearchGoods searchGoods) throws Exception {
+                        if((searchType == SearchType.ACTIVITY || searchType == SearchType.PRIVILEGE) && searchGoods.getData().getTitle() != null){
+                            activitydetail.setText(searchGoods.getData().getTitle());
                         }
                     }
                 })
@@ -498,7 +509,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                     goodRecAdapter.loadMoreEnd();
                 } else {
                     param.getData().setPageNo(param.getData().getPageNo() + 1);
-                    searchSevice.searchGoodsApi(gson.toJson(param))
+                    searchSevice.searchGoodsApi(action,gson.toJson(param))
                             .subscribeOn(Schedulers.io())
                             .observeOn(AndroidSchedulers.mainThread())
                             .subscribe(new Consumer<SearchGoods>() {
@@ -1293,15 +1304,15 @@ public class SearchGoodActivity extends AppCompatActivity {
         if (searchType == SearchType.ACTIVITY) {
             bottomshopcat.setVisibility(View.VISIBLE);
             activelayout.setVisibility(View.VISIBLE);
-            activitydetail.setText(getIntent().getStringExtra(getString(R.string.search_desc)));
             goodsWrap.setPadding(40, 0, 40, 220);
         } else if (searchType == SearchType.PRIVILEGE) {
             bottomshopcat.setVisibility(View.VISIBLE);
             goodsWrap.setPadding(40, 0, 40, 150);
             activelayout.setVisibility(View.VISIBLE);
-            activitydetail.setText(getIntent().getStringExtra(getString(R.string.search_desc)));
             cast.setVisibility(View.GONE);
             cut.setVisibility(View.GONE);
+            final String activeDesc = "以下商品享" + getIntent().getStringExtra(getString(R.string.search_desc)) + "优惠，可使用特权价购买";
+            activitydetail.setText(activeDesc);
         }
     }
 
@@ -1566,7 +1577,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .flatMap(new Function<SearchGoodsParam, ObservableSource<SearchGoods>>() {
                     @Override
                     public ObservableSource<SearchGoods> apply(@NonNull SearchGoodsParam searchGoodsParam) throws Exception {
-                        return fastSearchSevice.searchGoodsApi(gson.toJson(searchGoodsParam));
+                        return fastSearchSevice.searchGoodsApi(action,gson.toJson(searchGoodsParam));
                     }
                 })
                 .subscribeOn(Schedulers.io())
@@ -1582,7 +1593,8 @@ public class SearchGoodActivity extends AppCompatActivity {
                     public void onSubscribe(@NonNull Disposable d) {
                         goodRecAdapter.getData().clear();
                         goodRecAdapter.notifyDataSetChanged();
-                        dialog.show();
+                        dialog.setCancelable(false);
+                        dialog.show(getFragmentManager(),"dialog");
                     }
 
                     @Override
@@ -1834,7 +1846,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .flatMap(new Function<SearchGoodsParam, ObservableSource<SearchGoods>>() {
                     @Override
                     public ObservableSource<SearchGoods> apply(@NonNull SearchGoodsParam bean) throws Exception {
-                        return fastSearchSevice.searchGoodsApi(gson.toJson(bean));
+                        return fastSearchSevice.searchGoodsApi(action,gson.toJson(bean));
                     }
                 })
                 .subscribeOn(Schedulers.io())
@@ -1842,7 +1854,8 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .doOnSubscribe(new Consumer<Disposable>() {
                     @Override
                     public void accept(@NonNull Disposable disposable) throws Exception {
-                        dialog.show();
+                        dialog.setCancelable(false);
+                        dialog.show(getFragmentManager(),"dialog");
                     }
                 })
                 .flatMap(new Function<SearchGoods, ObservableSource<SearchGoods.DataBean>>() {

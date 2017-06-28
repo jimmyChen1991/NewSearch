@@ -8,15 +8,17 @@ import io.reactivex.Observable;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.POST;
+import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 /**
  * Created by user on 2017/6/9.
  */
 
 public interface SearchSevice {
-    @POST("index.php?r=essearch/searchgoods")
+    @POST("index.php")
     @FormUrlEncoded
-    Observable<SearchGoods> searchGoodsApi(@Field("parameter") String param);
+    Observable<SearchGoods> searchGoodsApi(@Query("r") String action, @Field("parameter") String param);
 
     @POST("index.php?r=essearch/searchfilter")
     @FormUrlEncoded

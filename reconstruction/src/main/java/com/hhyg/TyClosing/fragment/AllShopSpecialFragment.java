@@ -1,97 +1,63 @@
 package com.hhyg.TyClosing.fragment;
 
-import java.util.ArrayList;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
 
 import com.hhyg.TyClosing.R;
 import com.hhyg.TyClosing.allShop.info.SpecialInfo;
 import com.hhyg.TyClosing.global.ImageHelper;
-import com.hhyg.TyClosing.log.Logger;
-import com.hhyg.TyClosing.mgr.UserTrackMgr;
 import com.hhyg.TyClosing.ui.SpecialActivity;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.imageaware.ImageAware;
 import com.nostra13.universalimageloader.core.imageaware.ImageViewAware;
+import com.youth.banner.Banner;
+import com.youth.banner.BannerConfig;
+import com.youth.banner.Transformer;
+import com.youth.banner.listener.OnBannerListener;
 
-import android.annotation.SuppressLint;
-import android.content.Intent;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-import android.support.v4.view.PagerAdapter;
-import android.support.v4.view.ViewPager;
-import android.support.v4.view.ViewPager.OnPageChangeListener;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewGroup.LayoutParams;
-import android.widget.ImageView;
-import android.widget.ImageView.ScaleType;
-import android.widget.LinearLayout;
+import java.util.ArrayList;
 
-public class AllShopSpecialFragment extends AllShopBaseFragment implements OnPageChangeListener, View.OnClickListener {
+public class AllShopSpecialFragment extends AllShopBaseFragment implements View.OnClickListener {
 
-	private ViewPager mViewPager;
-	private LinearLayout mTipGroup;
 	private ArrayList<SpecialInfo> mSliderList;
 	private ArrayList<SpecialInfo> mAdList;
 	private ImageView AdOne;
 	private ImageView AdTwo;
-	private ImageView[] mTips;
-	private final int AUTO_MSG = 1;
-	private final int HANDLE_MSG = AUTO_MSG + 1;
-	private static final int PHOTO_CHANGE_TIME = 3000;// 定时变量
-	private int index = 0;
-	private boolean mAutoMsgSendble;
-	@SuppressLint("HandlerLeak")
-	private Handler mHandler = new Handler() {
-		public void handleMessage(Message msg) {
-            if (mHandler.hasMessages(AUTO_MSG)){  
-            	mHandler.removeMessages(AUTO_MSG);  
-            }  
-			switch (msg.what) {
-			case AUTO_MSG:
-				if(!mAutoMsgSendble){
-					return;
-				}
-				if (index == mSliderList.size()) {
-					index = 0;
-					}
-				mViewPager.setCurrentItem(index++);
-				// 收到消息后设置当前要显示的图片
-				mHandler.sendEmptyMessageDelayed(AUTO_MSG, PHOTO_CHANGE_TIME);
-				break;
-			case HANDLE_MSG:
-				mHandler.sendEmptyMessageDelayed(AUTO_MSG, PHOTO_CHANGE_TIME);
-				break;
-			default:
-				break;
-			}
-		};
-	};
-	private void setCanAutoMsgSend(boolean bool){
-		mAutoMsgSendble = bool;
-	}
-	public void stopAutoMsgSend(){
-		mHandler.removeMessages(AUTO_MSG);
-	}
+	private Banner banner;
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		View view = inflater.inflate(R.layout.allshop_special_frag, container);
 		findView(view);
+		banner.setBannerStyle(BannerConfig.CIRCLE_INDICATOR);
+		banner.setImageLoader(new BannerImgLoader());
+		banner.setDelayTime(3000);
+		banner.setIndicatorGravity(BannerConfig.CENTER);
+		banner.setBannerAnimation(Transformer.DepthPage);
+		banner.setOnBannerListener(new OnBannerListener() {
+			@Override
+			public void OnBannerClick(int position) {
+				for (SpecialInfo info : mSliderList){
+					Log.d("AllShopSpecialFragment", info.id);
+				}
+				String id = mSliderList.get(position).id;
+				Log.d("AllShopSpecialFragment", "real " + id + "  position" + position);
+				jumpToSpecialActivity(id);
+			}
+		});
 		return view;
 	}
 	@Override
 	public void setLastestContent() {
-		setCanAutoMsgSend(true);
 		mSliderList = mAllShopInfoMgr.getAllShopInfo().sliderInfoList;
 		mAdList = mAllShopInfoMgr.getAllShopInfo().AdInfoList;
-		initTips(mSliderList.size());
-		MyAdapter adapter = new MyAdapter();
-		mViewPager.setAdapter(adapter);
-		mHandler.sendEmptyMessageDelayed(AUTO_MSG, PHOTO_CHANGE_TIME);
-		if(mAdList.size()<2){
-			return;
-		}
+		banner.setImages(mSliderList);
+		banner.start();
 		AdSetTag();
 		showAd();
 	}
@@ -104,9 +70,7 @@ public class AllShopSpecialFragment extends AllShopBaseFragment implements OnPag
 		AdTwo.setTag(mAdList.get(1).id);
 	}
 	private void findView(View root) {
-		mViewPager = (ViewPager) root.findViewById(R.id.viewpager);
-		mViewPager.setOnPageChangeListener(this);
-		mTipGroup = (LinearLayout) root.findViewById(R.id.viewGroup);
+		banner = (Banner) root.findViewById(R.id.banner);
 		AdOne = (ImageView) root.findViewById(R.id.adone);
 		AdTwo = (ImageView) root.findViewById(R.id.adtwo);
 		AdOne.setOnClickListener(this);
@@ -114,85 +78,21 @@ public class AllShopSpecialFragment extends AllShopBaseFragment implements OnPag
 	}
 
 	@Override
-	public void onPageScrollStateChanged(int arg0) {
+	public void onResume() {
+		super.onResume();
+		banner.stopAutoPlay();
+		Log.d("AllShopSpecialFragment", "resume");
 	}
 
 	@Override
-	public void onPageScrolled(int arg0, float arg1, int arg2) {
-	}
-
-	@Override
-	public void onPageSelected(int arg0) {
-		setImageBackground(arg0);
-	}
-
-	private void setImageBackground(int selectItems) {
-		for (int i = 0; i < mTips.length; i++) {
-			if (i == selectItems) {
-				mTips[i].setBackgroundResource(R.drawable.page_indicator_focused);
-			} else {
-				mTips[i].setBackgroundResource(R.drawable.page_indicator_unfocused);
-			}
-		}
-	}
-
-	public class MyAdapter extends PagerAdapter {
-
-		@Override
-		public int getCount() {
-			return mSliderList.size();
-		}
-
-		@Override
-		public boolean isViewFromObject(View arg0, Object arg1) {
-			return arg0 == arg1;
-		}
-
-		@Override
-		public void destroyItem(View container, int position, Object object) {
-		}
-
-		@Override
-		public Object instantiateItem(View container, int position) {
-			ImageView view = new ImageView(getActivity());
-			String uri = mSliderList.get(position).netUri;
-			String specialId = mSliderList.get(position).id;
-			((ViewPager) container).addView(view, 0);
-			view.setTag(specialId);
-			view.setScaleType(ScaleType.FIT_XY);
-			view.setOnClickListener(AllShopSpecialFragment.this);
-			ImageAware imageAware = new ImageViewAware(view, false);
-			ImageLoader.getInstance().displayImage(uri, imageAware, ImageHelper.initSpecialPathOption());
-			return view;
-		}
-	}
-
-	private void initTips(int pointCnt) {
-		mTips = null;
-		mTipGroup.removeAllViews();
-		mTips = new ImageView[pointCnt];
-		Logger.GetInstance().Debug("size"+pointCnt);
-		for (int i = 0; i < mTips.length; i++) {
-			ImageView imageView = new ImageView(getActivity());
-			LinearLayout.LayoutParams ll = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT,
-					LayoutParams.WRAP_CONTENT);
-			ll.setMargins(15, 0, 15, 0);
-			imageView.setLayoutParams(ll);
-			mTips[i] = imageView;
-			if (i == 0) {
-				mTips[i].setBackgroundResource(R.drawable.page_indicator_focused);
-			} else {
-				mTips[i].setBackgroundResource(R.drawable.page_indicator_unfocused);
-			}
-			mTipGroup.addView(imageView);
-		}
+	public void onPause() {
+		super.onPause();
+		banner.startAutoPlay();
+		Log.d("AllShopSpecialFragment", "on pause");
 	}
 
 	@Override
 	public void onClick(View v) {
-		UserTrackMgr.getInstance().clear();
-		UserTrackMgr.getInstance().enter("AllShopSpecialFragment");
-        UserTrackMgr.getInstance().onEvent("adtolist", (String) v.getTag());
 		String SpecialId = (String) v.getTag();
 		jumpToSpecialActivity(SpecialId);
 	}
@@ -202,5 +102,12 @@ public class AllShopSpecialFragment extends AllShopBaseFragment implements OnPag
 		intent.putExtra("specialid", specialId);
 		startActivity(intent);
 	}
-
+	class BannerImgLoader extends com.youth.banner.loader.ImageLoader{
+		@Override
+		public void displayImage(Context context, Object path, ImageView imageView) {
+			SpecialInfo specialInfo = (SpecialInfo) path;
+			ImageAware imageAware = new ImageViewAware(imageView, false);
+			ImageLoader.getInstance().displayImage(specialInfo.netUri, imageAware, ImageHelper.initSpecialPathOption());
+		}
+	}
 }

@@ -91,6 +91,7 @@ public class SearchGoods {
         private boolean firstPage;
         private boolean lastPage;
         private String searchKey;
+        private String title;
         private List<GoodsListBean> goodsList;
 
         public int getPageNo() {
@@ -155,6 +156,14 @@ public class SearchGoods {
 
         public void setGoodsList(List<GoodsListBean> goodsList) {
             this.goodsList = goodsList;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
         }
 
         public static class GoodsListBean {
