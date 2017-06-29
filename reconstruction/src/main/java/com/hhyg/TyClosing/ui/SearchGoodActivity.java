@@ -16,6 +16,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -1591,6 +1592,12 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .subscribe(new Observer<SearchGoods>() {
                     @Override
                     public void onSubscribe(@NonNull Disposable d) {
+                        if(goodRecAdapter.getEmptyView() != null){
+                            ViewGroup group = (ViewGroup) goodRecAdapter.getEmptyView();
+                            if(group.getChildAt(0) != null){
+                                group.getChildAt(0).setVisibility(View.GONE);
+                            }
+                        }
                         goodRecAdapter.getData().clear();
                         goodRecAdapter.notifyDataSetChanged();
                         dialog.setCancelable(false);
