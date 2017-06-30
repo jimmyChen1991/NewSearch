@@ -227,6 +227,7 @@ public class SalerLoginActivity extends BaseActivity{
 	}
 
 	public void fetchConfigRes() {
+		Log.d("SalerLoginActivity", "config");
 		configParam.setChannel(mClosingRefInfoMgr.getChannelId());
 		configParam.setShopid(mClosingRefInfoMgr.getShopId());
 		configParam.setSaler_id(mClosingRefInfoMgr.getSalerId());
@@ -400,6 +401,7 @@ public class SalerLoginActivity extends BaseActivity{
 			super.handleMessage(msg);
 			switch(msg.what){
 				case 4:{
+					disProgressView();
 					Toasty.error(MyApplication.GetInstance(),(String) msg.obj).show();
 					break;
 				}
