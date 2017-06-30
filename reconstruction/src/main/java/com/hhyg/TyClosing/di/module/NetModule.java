@@ -1,5 +1,9 @@
 package com.hhyg.TyClosing.di.module;
 
+import android.util.Log;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Named;
@@ -86,11 +90,11 @@ public class NetModule {
         return new HttpLoggingInterceptor.Logger() {
             @Override
             public void log(String message) {
-//                try {
-//                    Log.v("httpLogger", URLDecoder.decode(message,"UTF-8"));
-//                } catch (UnsupportedEncodingException e) {
-//                    e.printStackTrace();
-//                }
+                try {
+                    Log.v("httpLogger", URLDecoder.decode(message,"UTF-8"));
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
             }
         };
     }

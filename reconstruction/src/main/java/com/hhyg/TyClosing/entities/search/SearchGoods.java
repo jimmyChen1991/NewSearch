@@ -92,6 +92,16 @@ public class SearchGoods {
         private boolean lastPage;
         private String searchKey;
         private String title;
+        private SearchRecommend NoneResults;
+
+        public SearchRecommend getNoneResults() {
+            return NoneResults;
+        }
+
+        public void setNoneResults(SearchRecommend noneResults) {
+            NoneResults = noneResults;
+        }
+
         private List<GoodsListBean> goodsList;
 
         public int getPageNo() {
