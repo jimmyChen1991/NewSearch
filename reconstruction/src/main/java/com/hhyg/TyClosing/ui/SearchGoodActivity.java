@@ -4,6 +4,7 @@ package com.hhyg.TyClosing.ui;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.annotation.Nullable;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -16,6 +17,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -52,6 +54,7 @@ import com.hhyg.TyClosing.entities.search.SearchType;
 import com.hhyg.TyClosing.entities.shopcart.CastDetail;
 import com.hhyg.TyClosing.entities.shopcart.ShopcartListParam;
 import com.hhyg.TyClosing.entities.shopcart.ShopcartListRes;
+import com.hhyg.TyClosing.exceptions.DataEmtryException;
 import com.hhyg.TyClosing.exceptions.ServiceDataException;
 import com.hhyg.TyClosing.exceptions.ServiceMsgException;
 import com.hhyg.TyClosing.fragment.LoadingDialogFragment;
@@ -110,6 +113,8 @@ public class SearchGoodActivity extends AppCompatActivity {
     TextView searchbar;
     @BindString(R.string.search_token)
     String seach_token;
+    @Inject
+    SearchGoodsParam param_filter;
     @Inject
     SearchGoodsParam param_use;
     @Inject
@@ -221,8 +226,10 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .applicationComponent(MyApplication.GetInstance().getComponent())
                 .commonNetParamComponent(DaggerCommonNetParamComponent.builder().commonNetParamModule(new CommonNetParamModule()).build())
                 .searchGoodsModule(new SearchGoodsModule((SearchGoodsParam.DataBean) getIntent().getParcelableExtra(seach_token), this))
-                .build().inject(this);
+                .build()
+                .inject(this);
         initView();
+        param_filter.getData().setAvailable(null); //获取筛选条件，有货没货不传
         Observable.just(param)
                 .flatMap(new Function<SearchGoodsParam, ObservableSource<SearchGoods>>() {
                     @Override
@@ -235,9 +242,16 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .doOnNext(new Consumer<SearchGoods>() {
                     @Override
                     public void accept(@NonNull SearchGoods searchGoods) throws Exception {
+
+                    }
+                })
+                .doOnNext(new Consumer<SearchGoods>() {
+                    @Override
+                    public void accept(@NonNull SearchGoods searchGoods) throws Exception {
                         totalPage = searchGoods.getData().getTotalPages();
                         if (searchGoods.getData().getGoodsList().size() == 0) {
                             goodRecAdapter.setEmptyView(R.layout.empty_view);
+                            throw new DataEmtryException();
                         } else {
                             goodRecAdapter.addData(searchGoods.getData().getGoodsList());
                         }
@@ -267,11 +281,13 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .map(new Function<SearchGoods, SearchGoodsParam>() {
                     @Override
                     public SearchGoodsParam apply(@NonNull SearchGoods searchGoods) throws Exception {
-                        Log.d(TAG, searchGoods.getData().getSearchKey());
-                        return param;
+                        if(searchGoods.getData().getSearchKey() != null && searchGoods.getData().getSearchKey().length() != 0){
+                            param_filter.getData().setKeyword(searchGoods.getData().getSearchKey());
+                        }
+                        return param_filter;
                     }
                 })
-                .first(param)
+                .first(param_filter)
                 .toObservable()
                 .flatMap(new Function<SearchGoodsParam, ObservableSource<SearchFilterRes>>() {
                     @Override
@@ -310,7 +326,9 @@ public class SearchGoodActivity extends AppCompatActivity {
                     public void accept(@NonNull Throwable throwable) throws Exception {
                         Log.d(TAG, "accept");
                         printErr(throwable);
-                        Toasty.error(SearchGoodActivity.this, getString(R.string.netconnect_exception)).show();
+                        if( !(throwable instanceof DataEmtryException)){
+                            Toasty.error(SearchGoodActivity.this, getString(R.string.netconnect_exception)).show();
+                        }
                     }
                 })
                 .observeOn(Schedulers.io())
@@ -1261,7 +1279,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                     @Override
                     public void onNext(@NonNull ShopcartListRes.DataBean dataBean) {
                         CastDetail detail = dataBean.getActive_columns().get(param.getData().getActivityId());
-                        setPrice(detail.getActive_price(), detail.getPreferentialPrice(), detail.getDesc_fee());
+                        setPrice(detail.getType(),detail.getActive_price(), detail.getPreferentialPrice(), detail.getDesc_fee());
                     }
 
                     @Override
@@ -1282,7 +1300,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 });
     }
 
-    private void setPrice(String cast2, String fee, String comment) {
+    private void setPrice(String type,String cast2, String fee, String comment) {
         if (cast2 != null && fee != null) {
             cast.setText("小计   " + getString(R.string.server_settle_moeny) + cast2);
             cut.setText("优惠   " + getString(R.string.server_settle_moeny) + fee);
@@ -1290,8 +1308,7 @@ public class SearchGoodActivity extends AppCompatActivity {
             cast.setText("小计   " + getString(R.string.server_settle_moeny) + "0");
             cut.setText("优惠   " + getString(R.string.server_settle_moeny) + "0");
         }
-        if (comment != null && !comment.equals("")) {
-            comment = comment.replace("查看更多商品>", "");
+        if (comment != null && !comment.equals("") && type != null && !type.equals("1")) {
             comment = comment.replace("去凑单>", "");
             full.setVisibility(View.VISIBLE);
             fullin.setText(Html.fromHtml(comment));
@@ -1591,6 +1608,12 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .subscribe(new Observer<SearchGoods>() {
                     @Override
                     public void onSubscribe(@NonNull Disposable d) {
+                        if(goodRecAdapter.getEmptyView() != null){
+                            ViewGroup group = (ViewGroup) goodRecAdapter.getEmptyView();
+                            if(group.getChildAt(0) != null){
+                                group.getChildAt(0).setVisibility(View.GONE);
+                            }
+                        }
                         goodRecAdapter.getData().clear();
                         goodRecAdapter.notifyDataSetChanged();
                         dialog.setCancelable(false);

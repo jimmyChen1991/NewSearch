@@ -109,6 +109,7 @@
                 android:visibility="gone"
                 android:paddingLeft="@dimen/dp_20"
                 android:paddingRight="20dip"
+                android:paddingBottom="@dimen/dp_5"
                 android:background="#f2f2f2">
                 <TextView
                     android:id="@+id/activitydetail"
