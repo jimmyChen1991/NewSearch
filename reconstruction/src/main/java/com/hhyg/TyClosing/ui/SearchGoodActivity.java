@@ -4,7 +4,6 @@ package com.hhyg.TyClosing.ui;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.provider.ContactsContract;
 import android.support.annotation.Nullable;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -12,6 +11,13 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -50,6 +56,7 @@ import com.hhyg.TyClosing.entities.search.SearchFilterParam;
 import com.hhyg.TyClosing.entities.search.SearchFilterRes;
 import com.hhyg.TyClosing.entities.search.SearchGoods;
 import com.hhyg.TyClosing.entities.search.SearchGoodsParam;
+import com.hhyg.TyClosing.entities.search.SearchRecommend;
 import com.hhyg.TyClosing.entities.search.SearchType;
 import com.hhyg.TyClosing.entities.shopcart.CastDetail;
 import com.hhyg.TyClosing.entities.shopcart.ShopcartListParam;
@@ -242,7 +249,9 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .doOnNext(new Consumer<SearchGoods>() {
                     @Override
                     public void accept(@NonNull SearchGoods searchGoods) throws Exception {
-
+                        if(searchGoods.getData().getNoneResults() != null){
+                            displayNoResults(searchGoods.getData().getNoneResults());
+                        }
                     }
                 })
                 .doOnNext(new Consumer<SearchGoods>() {
@@ -419,6 +428,52 @@ public class SearchGoodActivity extends AppCompatActivity {
 
                     }
                 });
+    }
+
+    private void displayNoResults(final SearchRecommend r) {
+        SpannableStringBuilder sb = new SpannableStringBuilder();
+        final String content = "没找到" + "\"" + getIntent().getStringExtra(getString(R.string.search_content)) + "\" 相关商品，为您推荐\"";
+        SpannableString noFind = new SpannableString(content);
+        noFind.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.red)),4,4+getIntent().getStringExtra(getString(R.string.search_content)).length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+        sb.append(noFind);
+        if(r.getRecommend() != null){
+            final String reCommoned = r.getRecommend() + "\"相关商品，您还可能需要";
+            SpannableString reCommonSpan = new SpannableString(reCommoned);
+            reCommonSpan.setSpan(new ClickableSpan() {
+                @Override
+                public void onClick(View widget) {
+                    final String searchContent = r.getRecommend();
+                    jumpToNewThis(searchContent);
+                }
+            },0,r.getRecommend().length(),Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+            sb.append(reCommonSpan);
+        }
+        if(r.getMoreneed() != null && r.getMoreneed().size() != 0){
+            for (final String item : r.getMoreneed()){
+                final String other = "\"" + item + "\"  ";
+                SpannableString otherSpan = new SpannableString(other);
+                otherSpan.setSpan(new ClickableSpan() {
+                    @Override
+                    public void onClick(View widget) {
+                        jumpToNewThis(item);
+                    }
+                },1,1 + item.length(),Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                sb.append(otherSpan);
+            }
+        }
+        activitydetail.setMovementMethod(LinkMovementMethod.getInstance());
+        activitydetail.setText(sb);
+        activelayout.setVisibility(View.VISIBLE);
+    }
+
+    private void jumpToNewThis(String searchContent) {
+        SearchGoodsParam.DataBean bean =  new SearchGoodsParam.DataBean();
+        bean.setKeyword(searchContent);
+        Intent it = new Intent(SearchGoodActivity.this,SearchGoodActivity.class);
+        it.putExtra(getString(R.string.search_token),bean);
+        it.putExtra(getString(R.string.search_content),searchContent);
+        it.putExtra(getString(R.string.search_type), SearchType.KEY_WORD.ordinal());
+        startActivity(it);
     }
 
 //    @Override
@@ -1535,7 +1590,6 @@ public class SearchGoodActivity extends AppCompatActivity {
                     @Override
                     public PeoperFilter apply(@NonNull List<FilterItem> filterItems, @NonNull FilterBean filterBean) throws Exception {
                         PeoperFilter filter = new PeoperFilter();
-                        ArrayList<String> res = new ArrayList<String>();
                         filter.setName(filterBean.getName());
                         filter.setValues((ArrayList<FilterItem>) filterItems);
                         return filter;
