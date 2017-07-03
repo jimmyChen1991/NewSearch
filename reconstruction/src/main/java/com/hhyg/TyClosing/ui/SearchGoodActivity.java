@@ -14,7 +14,6 @@ import android.text.Html;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
@@ -382,7 +381,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .flatMap(new Function<SearchGoodsParam, ObservableSource<PerFilterRes>>() {
                     @Override
                     public ObservableSource<PerFilterRes> apply(@NonNull SearchGoodsParam searchGoodsParam) throws Exception {
-                        return searchSevice.searchFilterApi(gson.toJson(searchGoodsParam))
+                        return fastSearchSevice.searchFilterApi(gson.toJson(searchGoodsParam))
                                 .zipWith(Observable.just(searchGoodsParam.getData().getClass3Id()), new BiFunction<SearchFilterRes, String, PerFilterRes>() {
                                     @Override
                                     public PerFilterRes apply(@NonNull SearchFilterRes searchFilterRes, @NonNull String s) throws Exception {
@@ -536,6 +535,7 @@ public class SearchGoodActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        disposableScrollUp();
         compositeDisposable.clear();
     }
 
@@ -582,20 +582,32 @@ public class SearchGoodActivity extends AppCompatActivity {
                     goodRecAdapter.loadMoreEnd();
                 } else {
                     param.getData().setPageNo(param.getData().getPageNo() + 1);
-                    searchSevice.searchGoodsApi(action,gson.toJson(param))
+                    fastSearchSevice.searchGoodsApi(action,gson.toJson(param))
                             .subscribeOn(Schedulers.io())
                             .observeOn(AndroidSchedulers.mainThread())
                             .subscribe(new Consumer<SearchGoods>() {
                                 @Override
                                 public void accept(@NonNull SearchGoods searchGoods) throws Exception {
+                                    Log.d(TAG, "accept scroll");
                                     goodRecAdapter.addData(searchGoods.getData().getGoodsList());
                                     goodRecAdapter.loadMoreComplete();
                                 }
                             }, new Consumer<Throwable>() {
                                 @Override
                                 public void accept(@NonNull Throwable throwable) throws Exception {
+                                    Log.d(TAG, "disposable" + throwable.toString());
                                     param.getData().setPageNo(param.getData().getPageNo() - 1);
                                     goodRecAdapter.loadMoreFail();
+                                }
+                            }, new Action() {
+                                @Override
+                                public void run() throws Exception {
+                                    Log.d(TAG, "complete scrool");
+                                }
+                            }, new Consumer<Disposable>() {
+                                @Override
+                                public void accept(@NonNull Disposable disposable) throws Exception {
+                                    Log.d(TAG, "start scroll");
                                 }
                             });
                 }
@@ -1662,6 +1674,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .subscribe(new Observer<SearchGoods>() {
                     @Override
                     public void onSubscribe(@NonNull Disposable d) {
+                        disposableScrollUp();
                         if(goodRecAdapter.getEmptyView() != null){
                             ViewGroup group = (ViewGroup) goodRecAdapter.getEmptyView();
                             if(group.getChildAt(0) != null){
@@ -1695,6 +1708,10 @@ public class SearchGoodActivity extends AppCompatActivity {
 
                     }
                 });
+    }
+
+    private void disposableScrollUp() {
+
     }
 
     private void clearStatus() {
@@ -1986,6 +2003,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 }, new Consumer<Disposable>() {
                     @Override
                     public void accept(@NonNull Disposable disposable) throws Exception {
+                        disposableScrollUp();
                         compositeDisposable.add(disposable);
                     }
                 });
