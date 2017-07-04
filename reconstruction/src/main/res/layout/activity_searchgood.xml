@@ -7,11 +7,11 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
     android:background="@color/ffffff">
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
         <RelativeLayout
+            android:id="@+id/back_wrap"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="10dp"
@@ -41,8 +41,10 @@
                 android:background="@drawable/allshop_search_tomian"/>
         </RelativeLayout>
         <RelativeLayout
+            android:id="@+id/chose_wrap"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_below="@+id/back_wrap"
             android:paddingLeft="10dp"
             android:paddingRight="10dp">
             <TextView
@@ -88,12 +90,15 @@
                 android:background="@drawable/allshop_search_goodlist_gerenal_pressed"/>
         </RelativeLayout>
         <ImageView
+            android:id="@+id/top_split"
             android:layout_width="match_parent"
             android:layout_height="1.5dp"
+            android:layout_below="@+id/chose_wrap"
             android:background="#e5e5e5" />
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_below="@+id/top_split"
             android:paddingTop="20dp"
             android:background="@color/mygray">
             <android.support.v7.widget.RecyclerView
@@ -213,7 +218,15 @@
                     />
             </LinearLayout>
         </RelativeLayout>
-    </LinearLayout>
+        <FrameLayout
+            android:id="@+id/protect_wrap"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_below="@+id/back_wrap"
+            android:clickable="true"
+            android:alpha="0">
+        </FrameLayout>
+    </RelativeLayout>
     <RelativeLayout
         android:id="@+id/drawer_right"
         android:layout_width="@dimen/drawerWidth"

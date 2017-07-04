@@ -219,6 +219,8 @@ public class SearchGoodActivity extends AppCompatActivity {
     RelativeLayout pricedefWrap;
     @BindView(R.id.wrap)
     View wrap;
+    @BindView(R.id.protect_wrap)
+    ViewGroup protectWrap;
     private SearchFilterRes rawFilterRes;
     private PeopertyPopwindow popWindow;
     private View retryView;
@@ -245,6 +247,13 @@ public class SearchGoodActivity extends AppCompatActivity {
                 })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
+                .doFinally(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        Log.d(TAG, "finally");
+                        protectWrap.setVisibility(View.GONE);
+                    }
+                })
                 .doOnNext(new Consumer<SearchGoods>() {
                     @Override
                     public void accept(@NonNull SearchGoods searchGoods) throws Exception {
@@ -276,7 +285,9 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .doOnError(new Consumer<Throwable>() {
                     @Override
                     public void accept(@NonNull Throwable throwable) throws Exception {
-                        Log.d(TAG, throwable.toString());
+                        if( !(throwable instanceof DataEmtryException)){
+                            Toasty.error(SearchGoodActivity.this, getString(R.string.netconnect_exception)).show();
+                        }
                     }
                 })
                 .observeOn(Schedulers.io())
@@ -300,7 +311,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                 .flatMap(new Function<SearchGoodsParam, ObservableSource<SearchFilterRes>>() {
                     @Override
                     public ObservableSource<SearchFilterRes> apply(@NonNull SearchGoodsParam searchGoodsParam) throws Exception {
-                        return searchSevice.searchFilterApi(gson.toJson(searchGoodsParam));
+                        return searchSevice.searchFilterApi(gson.toJson(searchGoodsParam)).retry();
                     }
                 })
                 .observeOn(AndroidSchedulers.mainThread())
@@ -334,9 +345,6 @@ public class SearchGoodActivity extends AppCompatActivity {
                     public void accept(@NonNull Throwable throwable) throws Exception {
                         Log.d(TAG, "accept");
                         printErr(throwable);
-                        if( !(throwable instanceof DataEmtryException)){
-                            Toasty.error(SearchGoodActivity.this, getString(R.string.netconnect_exception)).show();
-                        }
                     }
                 })
                 .observeOn(Schedulers.io())
@@ -427,6 +435,7 @@ public class SearchGoodActivity extends AppCompatActivity {
 
                     }
                 });
+        Log.d(TAG, "on create end");
     }
 
     private void displayNoResults(final SearchRecommend r) {
@@ -585,6 +594,12 @@ public class SearchGoodActivity extends AppCompatActivity {
                     fastSearchSevice.searchGoodsApi(action,gson.toJson(param))
                             .subscribeOn(Schedulers.io())
                             .observeOn(AndroidSchedulers.mainThread())
+                            .doFinally(new Action() {
+                                @Override
+                                public void run() throws Exception {
+                                    protectWrap.setVisibility(View.GONE);
+                                }
+                            })
                             .subscribe(new Consumer<SearchGoods>() {
                                 @Override
                                 public void accept(@NonNull SearchGoods searchGoods) throws Exception {
@@ -608,6 +623,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                                 @Override
                                 public void accept(@NonNull Disposable disposable) throws Exception {
                                     Log.d(TAG, "start scroll");
+                                    protectWrap.setVisibility(View.VISIBLE);
                                 }
                             });
                 }

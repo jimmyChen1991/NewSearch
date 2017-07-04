@@ -77,6 +77,10 @@ public class GoodInfoPresenter extends BasePresenter<GoodInfoView>{
 					good.name = data.getString("goodname");
 					good.brand = data.getString("goodbrand");
 					JSONArray spuInfo = data.getJSONArray("spu_info");
+					if(spuInfo == null){
+						postShowNoGoodMsg();
+						return;
+					}
 					final int citAmount = data.getIntValue("cit_amount");
 					good.citCateId = data.getIntValue("cit_cate_id");
 					good.typeName = data.getString("cit_name");
