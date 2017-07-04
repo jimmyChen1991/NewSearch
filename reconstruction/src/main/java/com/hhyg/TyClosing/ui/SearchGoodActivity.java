@@ -895,12 +895,22 @@ public class SearchGoodActivity extends AppCompatActivity {
         pricedefMin.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
-                if (hasFocus) {
-                    selectedIcon.setVisibility(View.VISIBLE);
-                    priceDefALLStatus();
-                }
+                priceEditFocusChange(hasFocus);
             }
         });
+        pricedefMax.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                priceEditFocusChange(hasFocus);
+            }
+        });
+    }
+
+    private void priceEditFocusChange(boolean hasFocus) {
+        if (hasFocus) {
+            selectedIcon.setVisibility(View.VISIBLE);
+            priceDefALLStatus();
+        }
     }
 
 //    private void textChanged() {
