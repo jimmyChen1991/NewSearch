@@ -247,13 +247,6 @@ public class SearchGoodActivity extends AppCompatActivity {
                 })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .doFinally(new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        Log.d(TAG, "finally");
-                        protectWrap.setVisibility(View.GONE);
-                    }
-                })
                 .doOnNext(new Consumer<SearchGoods>() {
                     @Override
                     public void accept(@NonNull SearchGoods searchGoods) throws Exception {
@@ -282,9 +275,16 @@ public class SearchGoodActivity extends AppCompatActivity {
                         }
                     }
                 })
+                .doOnNext(new Consumer<SearchGoods>() {
+                    @Override
+                    public void accept(@NonNull SearchGoods searchGoods) throws Exception {
+                        protectWrap.setVisibility(View.GONE);
+                    }
+                })
                 .doOnError(new Consumer<Throwable>() {
                     @Override
                     public void accept(@NonNull Throwable throwable) throws Exception {
+                        protectWrap.setVisibility(View.GONE);
                         if( !(throwable instanceof DataEmtryException)){
                             Toasty.error(SearchGoodActivity.this, getString(R.string.netconnect_exception)).show();
                         }
@@ -594,16 +594,11 @@ public class SearchGoodActivity extends AppCompatActivity {
                     fastSearchSevice.searchGoodsApi(action,gson.toJson(param))
                             .subscribeOn(Schedulers.io())
                             .observeOn(AndroidSchedulers.mainThread())
-                            .doFinally(new Action() {
-                                @Override
-                                public void run() throws Exception {
-                                    protectWrap.setVisibility(View.GONE);
-                                }
-                            })
                             .subscribe(new Consumer<SearchGoods>() {
                                 @Override
                                 public void accept(@NonNull SearchGoods searchGoods) throws Exception {
                                     Log.d(TAG, "accept scroll");
+                                    protectWrap.setVisibility(View.GONE);
                                     goodRecAdapter.addData(searchGoods.getData().getGoodsList());
                                     goodRecAdapter.loadMoreComplete();
                                 }
@@ -611,6 +606,7 @@ public class SearchGoodActivity extends AppCompatActivity {
                                 @Override
                                 public void accept(@NonNull Throwable throwable) throws Exception {
                                     Log.d(TAG, "disposable" + throwable.toString());
+                                    protectWrap.setVisibility(View.GONE);
                                     param.getData().setPageNo(param.getData().getPageNo() - 1);
                                     goodRecAdapter.loadMoreFail();
                                 }
@@ -1691,12 +1687,6 @@ public class SearchGoodActivity extends AppCompatActivity {
                 })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .doFinally(new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        dialog.dismiss();
-                    }
-                })
                 .subscribe(new Observer<SearchGoods>() {
                     @Override
                     public void onSubscribe(@NonNull Disposable d) {
@@ -1715,6 +1705,7 @@ public class SearchGoodActivity extends AppCompatActivity {
 
                     @Override
                     public void onNext(@NonNull SearchGoods searchGoods) {
+                        dialog.dismiss();
                         totalPage = searchGoods.getData().getTotalPages();
                         goodRecAdapter.setNewData(searchGoods.getData().getGoodsList());
                         if (searchGoods.getData().getGoodsList().size() == 0) {
@@ -1724,6 +1715,7 @@ public class SearchGoodActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(@NonNull Throwable e) {
+                        dialog.dismiss();
                         Log.d(TAG, e.toString());
                         goodRecAdapter.setEmptyView(retryView);
                         printErr(e);
