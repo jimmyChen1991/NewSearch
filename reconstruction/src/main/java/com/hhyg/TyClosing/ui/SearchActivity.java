@@ -513,18 +513,6 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
 		param.put("platformId",3);
 		return param.toString();
 	}
-	private String MakeHistoryJson(){
-		JSONObject param = new JSONObject();
-		param.put("imei", MyApplication.GetInstance().getAndroidId());
-		param.put("shopid", ClosingRefInfoMgr.getInstance().getShopId());
-		param.put("channel", ClosingRefInfoMgr.getInstance().getChannelId());
-		param.put("platformId",3);
-		JSONObject data = new JSONObject();
-		data.put("num", 10);
-		data.put("usersignmd5", ClosingRefInfoMgr.getInstance().getSalerId());
-		param.put("data", data);
-		return param.toString();
-	}
 	private String makeDelJson(){
 		JSONObject param = new JSONObject();
 		param.put("imei", MyApplication.GetInstance().getAndroidId());
